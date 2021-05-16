@@ -209,6 +209,23 @@ bool SCH_PAINTER::Draw( const VIEW_ITEM *aItem, int aLayer )
         m_gal->DrawRectangle( box.GetOrigin(), box.GetEnd() );
     }
 
+    //    if( ADVANCED_CFG::GetCfg().m_DrawBoundingBoxes )
+
+
+    if ((item->Type() == SCH_COMPONENT_T)	&&
+    		!static_cast<const SCH_COMPONENT*>( item )->GetIncludeInBom()) {
+
+    	BOX2I box = box = static_cast<const SCH_COMPONENT*>( item )->GetBodyBoundingBox();
+
+    	m_gal->SetIsFill( false );
+    	m_gal->SetIsStroke( true );
+    	m_gal->SetStrokeColor( item->IsSelected() ? COLOR4D( 1.0, 0.2, 0.2, 1 ) :
+    			COLOR4D( 0.2, 0.2, 0.2, 1 ) );
+    	m_gal->SetLineWidth( Mils2iu( 3 ) );
+    	m_gal->DrawRectangle( box.GetOrigin(), box.GetEnd() );
+    }
+
+
     switch( item->Type() )
     {
     HANDLE_ITEM( LIB_PART_T, LIB_PART );
@@ -1455,6 +1472,9 @@ void SCH_PAINTER::draw( SCH_COMPONENT *aSymbol, int aLayer )
         tempItem.MoveTo( tempItem.GetPosition() + (wxPoint) mapCoords( aSymbol->GetPosition() ) );
     }
 
+    if (!tempPart.GetIncludeInBom()) {
+
+    }
     // Copy the pin info from the symbol to the temp pins
     for( unsigned i = 0; i < tempPins.size(); ++ i )
     {
