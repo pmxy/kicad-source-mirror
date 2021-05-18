@@ -28,7 +28,7 @@ cmake_minimum_required( VERSION 3.10 FATAL_ERROR )
 if( DEFINED CMAKE_BUILD_TYPE )
     set( CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE} CACHE STRING "Set to either \"Release\" or \"Debug\"" )
 else()
-    set( CMAKE_BUILD_TYPE Release CACHE STRING "Set to either \"Release\" or \"Debug\"" )
+    set( CMAKE_BUILD_TYPE Debug CACHE STRING "Set to either \"Release\" or \"Debug\"" )
 endif()
 
 project( kicad )
@@ -64,7 +64,7 @@ option( KICAD_SCRIPTING_MODULES
 
 option( KICAD_SCRIPTING_PYTHON3
     "Build for Python 3 instead of 2 (default OFF)."
-    OFF )
+    ON )
 
 option( KICAD_SCRIPTING_WXPYTHON
     "Build wxPython implementation for wx interface building in Python and py.shell (default ON)."
@@ -72,7 +72,7 @@ option( KICAD_SCRIPTING_WXPYTHON
 
 option( KICAD_SCRIPTING_WXPYTHON_PHOENIX
     "Use new wxPython binding (default OFF)."
-    OFF )
+    ON )
 
 option( KICAD_SCRIPTING_ACTION_MENU
     "Build a tools menu with registered python plugins: actions plugins (default ON)."
@@ -80,11 +80,11 @@ option( KICAD_SCRIPTING_ACTION_MENU
 
 option( KICAD_USE_OCE
     "Build tools and plugins related to OpenCascade Community Edition (default ON)"
-    ON )
+    OFF )
 
 option( KICAD_USE_OCC
     "Build tools and plugins related to OpenCascade Technology (overrides KICAD_USE_OCE, default OFF)"
-    OFF )
+    ON )
 
 option( KICAD_INSTALL_DEMOS
     "Install KiCad demos and examples (default ON)"
@@ -118,15 +118,15 @@ option( KICAD_SANITIZE_THREADS
 
 option( KICAD_STDLIB_DEBUG
     "Build KiCad with libstdc++ debug flags enabled."
-    OFF )
+    ON )
 
 option( KICAD_STDLIB_LIGHT_DEBUG
     "Build KiCad with libstdc++ with -Wp,-D_GLIBCXX_ASSERTIONS flag enabled. Not as intrusive as KICAD_STDLIB_DEBUG"
-    OFF )
+    ON )
 
 cmake_dependent_option( KICAD_WIN32_BUILD_PARALLEL_CL_MP
     "Build in parallel using the /MP compiler option (default OFF for safety reasons)"
-    OFF "WIN32" OFF )
+    ON "WIN32" OFF )
 
 option( KICAD_USE_VALGRIND
     "Build KiCad with valgrind stack tracking enabled."
