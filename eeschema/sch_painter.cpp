@@ -210,79 +210,6 @@ bool SCH_PAINTER::Draw( const VIEW_ITEM *aItem, int aLayer )
         m_gal->DrawRectangle( box.GetOrigin(), box.GetEnd() );
     }
 
-    //    if( ADVANCED_CFG::GetCfg().m_DrawBoundingBoxes )
-
-    bool save_ShowDisable = m_schSettings.m_ShowDisabled;
-    bool save_ShowGreyedOut = m_schSettings.m_ShowGreyedOut;
-
-
-    if (item->Type() == SCH_COMPONENT_T) {
-
-    	const SCH_COMPONENT* cmp = static_cast<const SCH_COMPONENT*>( item );
-		int includeStatus = !cmp->GetIncludeInBom() + (!cmp->GetIncludeOnBoard() << 1);
-
-
-    	if (includeStatus) {
-
-			m_schSettings.m_ShowGreyedOut = true;
-
-    		BOX2I box = static_cast<const SCH_COMPONENT*>( item )->GetBodyBoundingBox();
-
-    		m_gal->SetIsFill( false );
-    		m_gal->SetIsStroke( true );
-
-
-//    		box = box.Inflate(Mils2iu(-5) );
-//    		m_gal->DrawRectangle( box.GetOrigin(), box.GetEnd() );
-
-    		// Symbol size must be > 25x25 UI
-
-    		const int SMALL_SYMB_THRESHOLD = 350;
-    		int lw;
-//    		Adapt thickness for small symbols
-    		if (box.Diagonal() < Mils2iu(SMALL_SYMB_THRESHOLD)) {
-        		lw = Mils2iu(20); 	// line width
-
-    		}
-    		else {
-        		lw = Mils2iu(30); 	// line width
-    		}
-
-    		int hlw = (3*lw)/2;
-
-			m_gal->SetLineWidth(  item->IsSelected() ? hlw : lw );
-
-    		switch (includeStatus) {
-
-    		case 1 :
-    			m_gal->SetStrokeColor(COLOR4D( 1.0, 0.2, 0.2, 1 ));
-    			m_gal->DrawLine(box.GetOrigin(), box.GetEnd());
-    			m_gal->DrawLine(VECTOR2I(box.GetRight(), box.GetTop()), VECTOR2I(box.GetLeft(), box.GetBottom()));
-    			break;
-
-    		case 2 :
-    			m_gal->SetStrokeColor(COLOR4D( 0.2, 1.0, 0.7, 1 ));
-    			m_gal->DrawLine(box.GetOrigin(), box.GetEnd());
-    			m_gal->DrawLine(VECTOR2I(box.GetRight(), box.GetTop()), VECTOR2I(box.GetLeft(), box.GetBottom()));
-    			break;
-
-    		case 3 : {
-    			m_gal->SetStrokeColor(COLOR4D( 1.0, 0.2, 0.2, 1 ));
-    			m_gal->DrawLine(box.GetOrigin(), box.GetEnd());
-    			m_gal->SetStrokeColor(COLOR4D( 0.2, 1.0, 0.7, 1 ));
-    			m_gal->DrawLine(VECTOR2I(box.GetRight(), box.GetTop()), VECTOR2I(box.GetLeft(), box.GetBottom()));
-
-    			break;
-    		}
-
-    		default: 				// Never happens, we are into : if (includeStatus){...}
-    			break;
-
-    		}
-    	}
-    }
-
-
     switch( item->Type() )
     {
     HANDLE_ITEM( LIB_PART_T, LIB_PART );
@@ -310,10 +237,8 @@ bool SCH_PAINTER::Draw( const VIEW_ITEM *aItem, int aLayer )
     HANDLE_ITEM( SCH_BITMAP_T, SCH_BITMAP );
     HANDLE_ITEM( SCH_MARKER_T, SCH_MARKER );
 
-    default: return false;
+    default: break;
     }
-
-    m_schSettings.m_ShowGreyedOut = save_ShowGreyedOut;
 
     return false;
 }
@@ -408,21 +333,30 @@ COLOR4D SCH_PAINTER::getRenderColor( const EDA_ITEM* aItem, int aLayer, bool aDr
         color = color.Darken( 0.5f );
     }
 
+    // greyed out. pmx-2021.05.17
+
+    double 	contrast_and_luminosity = 0.4;			// test
+    bool 	colour_reversed			= false;		// test
 
     if (m_schSettings.m_ShowGreyedOut) {
     	double grey = color.GetBrightness();
-    	double alpha = 1.0; 				// test : 0.2, 0.5, 1.0
+    	double alpha = color.a; 				// Preserve alpha. Useful? test : 0.2, 0.5, 1.0
+
     	if (grey < 0.0)  grey = 0.0;
     	else if (grey > 1.0) grey = 1.0;
 
     	if (m_schSettings.IsBackgroundDark()) {
-//        	grey = sqrt(1.0-grey);		// test rendering options
-        	grey = 1.0-sqrt(grey);		// test rendering options
-//        	grey = 1.0-grey;			// test rendering options
+    		if (colour_reversed) {
+    			grey = contrast_and_luminosity * (1.0 - grey);
+    		} else {
+    			grey = contrast_and_luminosity * grey;					// Default : reversed on dark BG
+    		}
     	} else {
-    		grey = 0.5*grey;			// test rendering options
-    		grey = sqrt(grey);			// test rendering options
-//    		grey = grey*grey;			// test rendering options
+    		if (colour_reversed) {
+        		grey = contrast_and_luminosity * (1.0 - grey) + (1.0 - contrast_and_luminosity);	// test rendering options
+    		} else {
+    			grey = contrast_and_luminosity * grey + (1.0 - contrast_and_luminosity);			// test rendering options
+    		}
     	}
 
 		color = COLOR4D(grey, grey, grey, alpha);
@@ -1531,6 +1465,15 @@ void SCH_PAINTER::draw( SCH_COMPONENT *aSymbol, int aLayer )
     int unit = aSymbol->GetUnitSelection( &m_schematic->CurrentSheet() );
     int convert = aSymbol->GetConvert();
 
+    bool save_ShowGreyedOut = m_schSettings.m_ShowGreyedOut;
+
+
+   	int includeStatus = !aSymbol->GetIncludeInBom() + (!aSymbol->GetIncludeOnBoard() << 1);
+
+   	if (includeStatus) {
+   		m_schSettings.m_ShowGreyedOut = true;
+   	}
+
     // Use dummy part if the actual couldn't be found (or couldn't be locked).
     LIB_PART* originalPart = aSymbol->GetPartRef() ? aSymbol->GetPartRef().get() : dummy();
     LIB_PINS  originalPins;
@@ -1551,9 +1494,6 @@ void SCH_PAINTER::draw( SCH_COMPONENT *aSymbol, int aLayer )
         tempItem.MoveTo( tempItem.GetPosition() + (wxPoint) mapCoords( aSymbol->GetPosition() ) );
     }
 
-    if (!tempPart.GetIncludeInBom()) {
-
-    }
     // Copy the pin info from the symbol to the temp pins
     for( unsigned i = 0; i < tempPins.size(); ++ i )
     {
@@ -1571,11 +1511,77 @@ void SCH_PAINTER::draw( SCH_COMPONENT *aSymbol, int aLayer )
             tempPin->SetFlags( IS_DANGLING );
     }
 
-    draw( &tempPart, aLayer, false, aSymbol->GetUnit(), aSymbol->GetConvert() );
 
-    // The fields are SCH_COMPONENT-specific so don't need to be copied/oriented/translated
-    for( const SCH_FIELD& field : aSymbol->GetFields() )
-        draw( &field, aLayer );
+ #if 1
+
+    // First draw commands will be drawn last on screen.
+
+    	if (includeStatus) {
+
+    		BOX2I box = static_cast<const SCH_COMPONENT*>( aSymbol )->GetBodyBoundingBox();
+
+    		m_gal->SetIsFill( false );
+    		m_gal->SetIsStroke( true );
+
+//    		box = box.Inflate(Mils2iu(-5) );
+//    		m_gal->DrawRectangle( box.GetOrigin(), box.GetEnd() );
+
+//    		Symbol size must be > 25x25 UI
+
+    		const int SMALL_SYMB_THRESHOLD = 350;	// Threshold, in IU, for "small" symbols. pmx-2021.05.17
+    		int lw;									// Line width
+    		int hlw;								// Line width when symbol hilighted
+
+//    		Adapt line width for small symbols
+    		if (box.Diagonal() < Mils2iu(SMALL_SYMB_THRESHOLD)) {
+    			lw = Mils2iu(20);
+    		} else {
+    			lw = Mils2iu(30);
+    		}
+
+    		hlw = (3*lw)/2;
+
+    		m_gal->SetLineWidth( aSymbol->IsSelected() ? hlw : lw );
+
+    		switch (includeStatus) {
+
+    		case 1 :
+    			m_gal->SetStrokeColor(COLOR4D( 1.0, 0.2, 0.2, 1 ));
+    			m_gal->DrawLine(box.GetOrigin(), box.GetEnd());
+    			m_gal->DrawLine(VECTOR2I(box.GetRight(), box.GetTop()), VECTOR2I(box.GetLeft(), box.GetBottom()));
+    			break;
+
+    		case 2 :
+    			m_gal->SetStrokeColor(COLOR4D( 0.2, 1.0, 0.7, 1 ));
+    			m_gal->DrawLine(box.GetOrigin(), box.GetEnd());
+    			m_gal->DrawLine(VECTOR2I(box.GetRight(), box.GetTop()), VECTOR2I(box.GetLeft(), box.GetBottom()));
+    			break;
+
+    		case 3 : {
+    			m_gal->SetStrokeColor(COLOR4D( 1.0, 0.2, 0.2, 1 ));
+    			m_gal->DrawLine(box.GetOrigin(), box.GetEnd());
+    			m_gal->SetStrokeColor(COLOR4D( 0.2, 1.0, 0.7, 1 ));
+    			m_gal->DrawLine(VECTOR2I(box.GetRight(), box.GetTop()), VECTOR2I(box.GetLeft(), box.GetBottom()));
+
+    			break;
+    		}
+
+    		default: 				// Never happens, we are into : if (includeStatus){...}
+    			break;
+
+    		}
+    	}
+#endif
+
+    	// The fields are SCH_COMPONENT-specific so don't need to be copied/oriented/translated
+    	for( const SCH_FIELD& field : aSymbol->GetFields() )
+    		draw( &field, aLayer );
+
+        draw( &tempPart, aLayer, false, aSymbol->GetUnit(), aSymbol->GetConvert() );
+
+    	m_schSettings.m_ShowGreyedOut = save_ShowGreyedOut;
+
+
 }
 
 
