@@ -84,6 +84,9 @@
 #include <gal/graphics_abstraction_layer.h>
 #include <drawing_sheet/ds_proxy_view_item.h>
 
+#include <widgets/panel_hierarchy_browser.h>
+#include <widgets/panel_component_libs_picker.h>
+
 // non-member so it can be moved easily, and kept REALLY private.
 // Do NOT Clear() in here.
 static void add_search_paths( SEARCH_STACK* aDst, const SEARCH_STACK& aSrc, int aIndex )
@@ -262,8 +265,22 @@ SCH_EDIT_FRAME::SCH_EDIT_FRAME( KIWAY* aKiway, wxWindow* aParent ) :
     m_auimgr.SetManagedWindow( this );
 
     CreateInfoBar();
+
+    m_hierarchy_browser = new panel_hierarchy_browser(this);
+    m_library_picker    = new panel_component_libs_picker(this); // temp
+
+//    m_auimgr.AddPane(m_hierarchy_browser, EDA_PANE().Palette().Name( "Hierarchy" )
+//            .Left().Layer( 6 ) );
+    m_auimgr.AddPane(m_hierarchy_browser, EDA_PANE().Canvas().Name( "Hierarchy" )
+            .Left().Layer( 6 ).Resizable(true).GripperTop(true).PaneBorder(true)  );
+
+    m_auimgr.AddPane(m_library_picker, EDA_PANE().Canvas().Name( "CompPlacer" )
+            .Right().Layer( 6 ).Resizable(true).GripperTop(true).PaneBorder(true)  );
+
     m_auimgr.AddPane( m_mainToolBar, EDA_PANE().HToolbar().Name( "MainToolbar" )
                       .Top().Layer( 6 ) );
+//    m_auimgr.AddPane( m_optionsToolBar, EDA_PANE().Palette().Name( "OptToolbar" )
+//                      .Top().Layer( 3 ) );
     m_auimgr.AddPane( m_optionsToolBar, EDA_PANE().VToolbar().Name( "OptToolbar" )
                       .Left().Layer( 3 ) );
     m_auimgr.AddPane( m_drawToolBar, EDA_PANE().VToolbar().Name( "ToolsToolbar" )
@@ -274,6 +291,11 @@ SCH_EDIT_FRAME::SCH_EDIT_FRAME( KIWAY* aKiway, wxWindow* aParent ) :
                       .Bottom().Layer( 6 ) );
 
     FinishAUIInitialization();
+
+    unsigned int flags_wxAUI = m_auimgr.GetFlags();
+    flags_wxAUI = flags_wxAUI | wxAUI_MGR_LIVE_RESIZE;
+    m_auimgr.SetFlags(flags_wxAUI);
+
 
     resolveCanvasType();
     SwitchCanvas( m_canvasType );
