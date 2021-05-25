@@ -77,6 +77,7 @@ SCH_RENDER_SETTINGS::SCH_RENDER_SETTINGS() :
         m_ShowDisabled( false ),
         m_ShowGraphicsDisabled( false ),
         m_ShowUmbilicals( true ),
+		m_ShowGreyedOut(false),					// pmx-2021.05.17
         m_OverrideItemColors( false ),
         m_TextOffsetRatio( 0.08 ),
         m_DefaultWireThickness( DEFAULT_WIRE_THICKNESS * IU_PER_MILS ),
@@ -236,7 +237,7 @@ bool SCH_PAINTER::Draw( const VIEW_ITEM *aItem, int aLayer )
     HANDLE_ITEM( SCH_BITMAP_T, SCH_BITMAP );
     HANDLE_ITEM( SCH_MARKER_T, SCH_MARKER );
 
-    default: return false;
+    default: break;
     }
 
     return false;
@@ -330,6 +331,35 @@ COLOR4D SCH_PAINTER::getRenderColor( const EDA_ITEM* aItem, int aLayer, bool aDr
             || ( m_schSettings.m_ShowGraphicsDisabled && aItem->Type() != LIB_FIELD_T ) )
     {
         color = color.Darken( 0.5f );
+    }
+
+    // greyed out. pmx-2021.05.17
+
+    double 	contrast_and_luminosity = 0.4;			// test
+    bool 	colour_reversed			= false;		// test
+
+    if (m_schSettings.m_ShowGreyedOut) {
+    	double grey = color.GetBrightness();
+    	double alpha = color.a; 				// Preserve alpha. Useful? test : 0.2, 0.5, 1.0
+
+    	if (grey < 0.0)  grey = 0.0;
+    	else if (grey > 1.0) grey = 1.0;
+
+    	if (m_schSettings.IsBackgroundDark()) {
+    		if (colour_reversed) {
+    			grey = contrast_and_luminosity * (1.0 - grey);
+    		} else {
+    			grey = contrast_and_luminosity * grey;					// Default : reversed on dark BG
+    		}
+    	} else {
+    		if (colour_reversed) {
+        		grey = contrast_and_luminosity * (1.0 - grey) + (1.0 - contrast_and_luminosity);	// test rendering options
+    		} else {
+    			grey = contrast_and_luminosity * grey + (1.0 - contrast_and_luminosity);			// test rendering options
+    		}
+    	}
+
+		color = COLOR4D(grey, grey, grey, alpha);
     }
 
     return color;
@@ -1435,6 +1465,15 @@ void SCH_PAINTER::draw( SCH_COMPONENT *aSymbol, int aLayer )
     int unit = aSymbol->GetUnitSelection( &m_schematic->CurrentSheet() );
     int convert = aSymbol->GetConvert();
 
+    bool save_ShowGreyedOut = m_schSettings.m_ShowGreyedOut;
+
+
+   	int includeStatus = !aSymbol->GetIncludeInBom() + (!aSymbol->GetIncludeOnBoard() << 1);
+
+   	if (includeStatus) {
+   		m_schSettings.m_ShowGreyedOut = true;
+   	}
+
     // Use dummy part if the actual couldn't be found (or couldn't be locked).
     LIB_PART* originalPart = aSymbol->GetPartRef() ? aSymbol->GetPartRef().get() : dummy();
     LIB_PINS  originalPins;
@@ -1472,11 +1511,77 @@ void SCH_PAINTER::draw( SCH_COMPONENT *aSymbol, int aLayer )
             tempPin->SetFlags( IS_DANGLING );
     }
 
-    draw( &tempPart, aLayer, false, aSymbol->GetUnit(), aSymbol->GetConvert() );
 
-    // The fields are SCH_COMPONENT-specific so don't need to be copied/oriented/translated
-    for( const SCH_FIELD& field : aSymbol->GetFields() )
-        draw( &field, aLayer );
+ #if 1
+
+    // First draw commands will be drawn last on screen.
+
+    	if (includeStatus) {
+
+    		BOX2I box = static_cast<const SCH_COMPONENT*>( aSymbol )->GetBodyBoundingBox();
+
+    		m_gal->SetIsFill( false );
+    		m_gal->SetIsStroke( true );
+
+//    		box = box.Inflate(Mils2iu(-5) );
+//    		m_gal->DrawRectangle( box.GetOrigin(), box.GetEnd() );
+
+//    		Symbol size must be > 25x25 UI
+
+    		const int SMALL_SYMB_THRESHOLD = 350;	// Threshold, in IU, for "small" symbols. pmx-2021.05.17
+    		int lw;									// Line width
+    		int hlw;								// Line width when symbol hilighted
+
+//    		Adapt line width for small symbols
+    		if (box.Diagonal() < Mils2iu(SMALL_SYMB_THRESHOLD)) {
+    			lw = Mils2iu(20);
+    		} else {
+    			lw = Mils2iu(30);
+    		}
+
+    		hlw = (3*lw)/2;
+
+    		m_gal->SetLineWidth( aSymbol->IsSelected() ? hlw : lw );
+
+    		switch (includeStatus) {
+
+    		case 1 :
+    			m_gal->SetStrokeColor(COLOR4D( 1.0, 0.2, 0.2, 1 ));
+    			m_gal->DrawLine(box.GetOrigin(), box.GetEnd());
+    			m_gal->DrawLine(VECTOR2I(box.GetRight(), box.GetTop()), VECTOR2I(box.GetLeft(), box.GetBottom()));
+    			break;
+
+    		case 2 :
+    			m_gal->SetStrokeColor(COLOR4D( 0.2, 1.0, 0.7, 1 ));
+    			m_gal->DrawLine(box.GetOrigin(), box.GetEnd());
+    			m_gal->DrawLine(VECTOR2I(box.GetRight(), box.GetTop()), VECTOR2I(box.GetLeft(), box.GetBottom()));
+    			break;
+
+    		case 3 : {
+    			m_gal->SetStrokeColor(COLOR4D( 1.0, 0.2, 0.2, 1 ));
+    			m_gal->DrawLine(box.GetOrigin(), box.GetEnd());
+    			m_gal->SetStrokeColor(COLOR4D( 0.2, 1.0, 0.7, 1 ));
+    			m_gal->DrawLine(VECTOR2I(box.GetRight(), box.GetTop()), VECTOR2I(box.GetLeft(), box.GetBottom()));
+
+    			break;
+    		}
+
+    		default: 				// Never happens, we are into : if (includeStatus){...}
+    			break;
+
+    		}
+    	}
+#endif
+
+    	// The fields are SCH_COMPONENT-specific so don't need to be copied/oriented/translated
+    	for( const SCH_FIELD& field : aSymbol->GetFields() )
+    		draw( &field, aLayer );
+
+        draw( &tempPart, aLayer, false, aSymbol->GetUnit(), aSymbol->GetConvert() );
+
+    	m_schSettings.m_ShowGreyedOut = save_ShowGreyedOut;
+
+
 }
 
 
@@ -1661,69 +1766,191 @@ void SCH_PAINTER::draw( SCH_HIERLABEL *aLabel, int aLayer )
 
 void SCH_PAINTER::draw( const SCH_SHEET *aSheet, int aLayer )
 {
-    bool drawingShadows = aLayer == LAYER_SELECTION_SHADOWS;
+	bool drawingShadows = aLayer == LAYER_SELECTION_SHADOWS;
 
-    if( aLayer == LAYER_HIERLABEL || aLayer == LAYER_SELECTION_SHADOWS )
-    {
-        for( SCH_SHEET_PIN* sheetPin : aSheet->GetPins() )
-        {
-            if( drawingShadows && !aSheet->IsSelected() && !sheetPin->IsSelected() )
-                continue;
+	if( aLayer == LAYER_HIERLABEL || aLayer == LAYER_SELECTION_SHADOWS )
+	{
+		for( SCH_SHEET_PIN* sheetPin : aSheet->GetPins() )
+		{
+			if( drawingShadows && !aSheet->IsSelected() && !sheetPin->IsSelected() )
+				continue;
 
-            if( drawingShadows && aSheet->IsSelected()
-                    && !eeconfig()->m_Selection.draw_selected_children )
-            {
-                break;
-            }
+			if( drawingShadows && aSheet->IsSelected()
+					&& !eeconfig()->m_Selection.draw_selected_children )
+			{
+				break;
+			}
 
-            int     width = std::max( aSheet->GetPenWidth(), m_schSettings.GetDefaultPenWidth() );
-            wxPoint initial_pos = sheetPin->GetTextPos();
-            wxPoint offset_pos = initial_pos;
+			int     width = std::max( aSheet->GetPenWidth(), m_schSettings.GetDefaultPenWidth() );
+			wxPoint initial_pos = sheetPin->GetTextPos();
+			wxPoint offset_pos = initial_pos;
 
-            // For aesthetic reasons, the SHEET_PIN is drawn with a small offset of width / 2
-            switch( sheetPin->GetEdge() )
-            {
-            case SHEET_TOP_SIDE:    offset_pos.y += KiROUND( width / 2.0 ); break;
-            case SHEET_BOTTOM_SIDE: offset_pos.y -= KiROUND( width / 2.0 ); break;
-            case SHEET_RIGHT_SIDE:  offset_pos.x -= KiROUND( width / 2.0 ); break;
-            case SHEET_LEFT_SIDE:   offset_pos.x += KiROUND( width / 2.0 ); break;
-            default: break;
-            }
+			// For aesthetic reasons, the SHEET_PIN is drawn with a small offset of width / 2
+			switch( sheetPin->GetEdge() )
+			{
+			case SHEET_TOP_SIDE:    offset_pos.y += KiROUND( width / 2.0 ); break;
+			case SHEET_BOTTOM_SIDE: offset_pos.y -= KiROUND( width / 2.0 ); break;
+			case SHEET_RIGHT_SIDE:  offset_pos.x -= KiROUND( width / 2.0 ); break;
+			case SHEET_LEFT_SIDE:   offset_pos.x += KiROUND( width / 2.0 ); break;
+			default: break;
+			}
 
-            sheetPin->SetTextPos( offset_pos );
-            draw( static_cast<SCH_HIERLABEL*>( sheetPin ), aLayer );
-            m_gal->DrawLine( offset_pos, initial_pos );
-            sheetPin->SetTextPos( initial_pos );
-        }
-    }
+			sheetPin->SetTextPos( offset_pos );
+			draw( static_cast<SCH_HIERLABEL*>( sheetPin ), aLayer );
+			m_gal->DrawLine( offset_pos, initial_pos );
+			sheetPin->SetTextPos( initial_pos );
+		}
+	}
 
-    VECTOR2D pos  = aSheet->GetPosition();
-    VECTOR2D size = aSheet->GetSize();
+	VECTOR2D pos  = aSheet->GetPosition();
+	VECTOR2D size = aSheet->GetSize();
 
-    if( aLayer == LAYER_SHEET_BACKGROUND )
-    {
-        m_gal->SetFillColor( getRenderColor( aSheet, LAYER_SHEET_BACKGROUND, true ) );
-        m_gal->SetIsFill( true );
-        m_gal->SetIsStroke( false );
+	if( aLayer == LAYER_SHEET_BACKGROUND )
+	{
+		m_gal->SetFillColor( getRenderColor( aSheet, LAYER_SHEET_BACKGROUND, true ) );
+		m_gal->SetIsFill( true );
+		m_gal->SetIsStroke( false );
 
-        m_gal->DrawRectangle( pos, pos + size );
-    }
+		m_gal->DrawRectangle( pos, pos + size );
+	}
 
-    if( aLayer == LAYER_SHEET || aLayer == LAYER_SELECTION_SHADOWS )
-    {
-        m_gal->SetStrokeColor( getRenderColor( aSheet, LAYER_SHEET, drawingShadows ) );
-        m_gal->SetIsStroke( true );
-        m_gal->SetLineWidth( getLineWidth( aSheet, drawingShadows ) );
-        m_gal->SetIsFill( false );
+	if( aLayer == LAYER_SHEET || aLayer == LAYER_SELECTION_SHADOWS )
+	{
+		m_gal->SetStrokeColor( getRenderColor( aSheet, LAYER_SHEET, drawingShadows ) );
+		m_gal->SetIsStroke( true );
+		m_gal->SetLineWidth( getLineWidth( aSheet, drawingShadows ) );
+		m_gal->SetIsFill( false );
 
-        m_gal->DrawRectangle( pos, pos + size );
+		m_gal->DrawRectangle( pos, pos + size );
 
-        if( drawingShadows && !eeconfig()->m_Selection.draw_selected_children && aSheet->IsSelected() )
-            return;
+		if( drawingShadows && !eeconfig()->m_Selection.draw_selected_children && aSheet->IsSelected() )
+			return;
 
-        for( const SCH_FIELD& field : aSheet->GetFields() )
-            draw( &field, aLayer );
-    }
+		for( const SCH_FIELD& field : aSheet->GetFields() )
+			draw( &field, aLayer );
+	}
+
+	// List Componenets in the sheet and count components excluded from BOM or Board
+
+	SCH_SCREEN* screen = aSheet->GetScreen();
+	bool anyNotInBom 	= false;
+	bool anyNotInBoard 	= false;
+	int includeStatus;
+
+	if (screen) {
+
+		for( SCH_ITEM* item : screen->Items().OfType( SCH_COMPONENT_T ) )
+		{
+//			SCH_COMPONENT* cmp = static_cast<const SCH_COMPONENT*>(item);
+            SCH_COMPONENT* cmp = (SCH_COMPONENT*) item;
+
+			if (!cmp->GetIncludeInBom())	{anyNotInBom   = true;};
+			if (!cmp->GetIncludeOnBoard()) 	{anyNotInBoard = true;};
+//			if (anyNotInBom && anyNotInBom) {break;}
+		}
+
+		includeStatus = anyNotInBom + ((!!anyNotInBoard) << 1);
+
+		if (includeStatus) {
+			// some components in the sheet are not in BOM or not on Board
+
+			// Markers dimensions MARK_W, MARK_H = 240 mils x 360mils.
+			// Space between markers MARK_S = 80 mils
+			const int MARK_W = Mils2iu(240);
+			const int MARK_H = Mils2iu(360);
+			const int MARK_S = Mils2iu(80);
+			const int lw 	 = Mils2iu(20); 	// line with
+
+			// Marker geometric elems:
+			VECTOR2I mark_pos 			= VECTOR2I(-MARK_W/2, -MARK_H/2);
+			VECTOR2I mark_end 			= VECTOR2I( MARK_W/2,  MARK_H/2);
+			VECTOR2I mark_top_right 	= VECTOR2I( MARK_W/2, -MARK_H/2);
+			VECTOR2I mark_botton_left 	= VECTOR2I(-MARK_W/2,  MARK_H/2);
+			VECTOR2I mark_mark_offset 	= VECTOR2I( MARK_W/2,  0);
+			VECTOR2I mark_half_space	= VECTOR2I (MARK_S/2,  0);
+			VECTOR2I mark_grow_size		= VECTOR2I(Mils2iu(-15), Mils2iu(-15));
+
+
+			m_gal->SetIsStroke( true );
+//			m_gal->SetLineWidth( getLineWidth( aSheet, drawingShadows ) );
+			m_gal->SetLineWidth(lw);
+			m_gal->SetIsFill( false );
+
+			switch (includeStatus) {
+
+
+			case 1 : {
+
+				VECTOR2I start  = VECTOR2I(pos+size/2);
+
+				m_gal->SetStrokeColor( getRenderColor( aSheet, LAYER_SHEET, 0 ) );
+				m_gal->SetLineWidth( getLineWidth( aSheet, 0 ) );
+
+				m_gal->DrawRectangle( start + mark_pos + mark_grow_size, start + mark_end - mark_grow_size);
+
+	   			m_gal->SetStrokeColor(COLOR4D( 1.0, 0.2, 0.2, 1 ));
+				m_gal->SetLineWidth(lw);
+	   			m_gal->DrawLine(start + mark_pos, start + mark_end);
+	   			m_gal->DrawLine(start + mark_top_right, start + mark_botton_left);
+
+	   			break;
+			}
+
+			case 2 : {
+
+				VECTOR2I start  = VECTOR2I(pos+size/2);
+
+				m_gal->SetStrokeColor( getRenderColor( aSheet, LAYER_SHEET, 0 ) );
+				m_gal->SetLineWidth( getLineWidth( aSheet, 0 ) );
+
+				m_gal->DrawRectangle( start + mark_pos + mark_grow_size, start + mark_end - mark_grow_size);
+
+    			m_gal->SetStrokeColor(COLOR4D( 0.2, 1.0, 0.7, 1 ));
+				m_gal->SetLineWidth(lw);
+	   			m_gal->DrawLine(start + mark_pos, start + mark_end);
+	   			m_gal->DrawLine(start + mark_top_right, start + mark_botton_left);
+
+	   			break;
+			}
+
+			case 3 : {
+
+				VECTOR2I start  = VECTOR2I(pos+size/2-mark_mark_offset-mark_half_space);
+
+				m_gal->SetStrokeColor( getRenderColor( aSheet, LAYER_SHEET, 0 ) );
+				m_gal->SetLineWidth( getLineWidth( aSheet, 0 ) );
+
+				m_gal->DrawRectangle( start + mark_pos + mark_grow_size, start + mark_end - mark_grow_size);
+
+	   			m_gal->SetStrokeColor(COLOR4D( 1.0, 0.2, 0.2, 1 ));
+				m_gal->SetLineWidth(lw);
+	   			m_gal->DrawLine(start + mark_pos, start + mark_end);
+	   			m_gal->DrawLine(start + mark_top_right, start + mark_botton_left);
+
+	   			start = pos + size/2 + mark_mark_offset + mark_half_space;
+
+
+				m_gal->SetStrokeColor( getRenderColor( aSheet, LAYER_SHEET, 0 ) );
+				m_gal->SetLineWidth( getLineWidth( aSheet, 0 ) );
+
+				m_gal->DrawRectangle( start + mark_pos + mark_grow_size, start + mark_end - mark_grow_size);
+
+    			m_gal->SetStrokeColor(COLOR4D( 0.2, 1.0, 0.7, 1 ));
+				m_gal->SetLineWidth(lw);
+	   			m_gal->DrawLine(start + mark_pos, start + mark_end);
+	   			m_gal->DrawLine(start + mark_top_right, start + mark_botton_left);
+
+	   			break;
+			}
+
+
+			default :
+				break;
+			}
+
+		}
+	}
+
 }
 
 
