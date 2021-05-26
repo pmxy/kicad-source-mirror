@@ -53,12 +53,12 @@ class panel_hierarchy_browser_base : public wxPanel
 
 	public:
 
-		panel_hierarchy_browser_base( wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 164,500 ), long style = wxTAB_TRAVERSAL, const wxString& name = wxEmptyString );
+		panel_hierarchy_browser_base( wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 150,700 ), long style = 0, const wxString& name = wxEmptyString );
 		~panel_hierarchy_browser_base();
 
 		void m_splitter2OnIdle( wxIdleEvent& )
 		{
-			m_splitter2->SetSashPosition( 300 );
+			m_splitter2->SetSashPosition( 500 );
 			m_splitter2->Disconnect( wxEVT_IDLE, wxIdleEventHandler( panel_hierarchy_browser_base::m_splitter2OnIdle ), NULL, this );
 		}
 

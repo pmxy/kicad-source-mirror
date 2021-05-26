@@ -790,6 +790,21 @@ public:
     }
 
     /**
+     * For side toolboxes : hierarchy or libs browsers, nets listings, etc...
+     */
+    EDA_PANE& SideToolBox()
+    {
+        CaptionVisible( false );
+        Layer( 6 );
+        PaneBorder( true );
+        LeftDockable().RightDockable();
+        Resizable( true );      // expand to fit available space
+        Gripper( true );		// if float
+        Floatable(true);		// tests
+        return *this;
+    }
+
+    /**
      * Turn *this into a messages pane for KiCad.
      */
     EDA_PANE& Messages()

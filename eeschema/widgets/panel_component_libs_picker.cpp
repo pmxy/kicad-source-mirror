@@ -6,11 +6,15 @@
  */
 
 
-
 #include <widgets/panel_component_libs_picker.h>
 
 
 panel_component_libs_picker::panel_component_libs_picker( wxWindow* aParent ) : panel_component_libs_picker_base( aParent ) {
+
+//
+//    m_componentSearch->SetHint(_("Component Name"));
+//    m_libSearch      ->SetHint(_("Library Name"));
+//    m_parameterSearch->SetHint(_("Parameter Name"));
 
 }
 

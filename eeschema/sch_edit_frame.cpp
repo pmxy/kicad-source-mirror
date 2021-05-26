@@ -269,22 +269,21 @@ SCH_EDIT_FRAME::SCH_EDIT_FRAME( KIWAY* aKiway, wxWindow* aParent ) :
     m_hierarchy_browser = new panel_hierarchy_browser(this);
     m_library_picker    = new panel_component_libs_picker(this); // temp
 
-//    m_auimgr.AddPane(m_hierarchy_browser, EDA_PANE().Palette().Name( "Hierarchy" )
-//            .Left().Layer( 6 ) );
-    m_auimgr.AddPane(m_hierarchy_browser, EDA_PANE().Canvas().Name( "Hierarchy" )
-            .Left().Layer( 6 ).Resizable(true).GripperTop(true).PaneBorder(true)  );
+    m_auimgr.AddPane( m_hierarchy_browser, EDA_PANE().SideToolBox().Name( "Hierarchy" )
+            		 .Left().Layer( 6 ).Floatable(false).Gripper(false) );
 
-    m_auimgr.AddPane(m_library_picker, EDA_PANE().Canvas().Name( "CompPlacer" )
-            .Right().Layer( 6 ).Resizable(true).GripperTop(true).PaneBorder(true)  );
+    m_auimgr.AddPane( m_library_picker, EDA_PANE().SideToolBox().Name( "CompPlacer" )
+            		  .Right().Layer( 6 ).Floatable(false).Gripper(false) );
 
     m_auimgr.AddPane( m_mainToolBar, EDA_PANE().HToolbar().Name( "MainToolbar" )
                       .Top().Layer( 6 ) );
-//    m_auimgr.AddPane( m_optionsToolBar, EDA_PANE().Palette().Name( "OptToolbar" )
-//                      .Top().Layer( 3 ) );
+
     m_auimgr.AddPane( m_optionsToolBar, EDA_PANE().VToolbar().Name( "OptToolbar" )
                       .Left().Layer( 3 ) );
+
     m_auimgr.AddPane( m_drawToolBar, EDA_PANE().VToolbar().Name( "ToolsToolbar" )
                       .Right().Layer( 2 ) );
+
     m_auimgr.AddPane( GetCanvas(), EDA_PANE().Canvas().Name( "DrawFrame" )
                       .Center() );
     m_auimgr.AddPane( m_messagePanel, EDA_PANE().Messages().Name( "MsgPanel" )
@@ -295,7 +294,6 @@ SCH_EDIT_FRAME::SCH_EDIT_FRAME( KIWAY* aKiway, wxWindow* aParent ) :
     unsigned int flags_wxAUI = m_auimgr.GetFlags();
     flags_wxAUI = flags_wxAUI | wxAUI_MGR_LIVE_RESIZE;
     m_auimgr.SetFlags(flags_wxAUI);
-
 
     resolveCanvasType();
     SwitchCanvas( m_canvasType );
