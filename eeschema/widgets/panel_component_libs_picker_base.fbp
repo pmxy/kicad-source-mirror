@@ -50,6 +50,7 @@
             <property name="window_name"></property>
             <property name="window_style">wxBORDER_NONE|wxNO_FULL_REPAINT_ON_RESIZE</property>
             <event name="OnSetFocus">OnSetFocus</event>
+            <event name="OnUpdateUI">OnUpdateUI</event>
             <object class="wxBoxSizer" expanded="1">
                 <property name="minimum_size"></property>
                 <property name="name">bSizer13</property>

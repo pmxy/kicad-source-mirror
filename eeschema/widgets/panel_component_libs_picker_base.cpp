@@ -253,6 +253,7 @@ panel_component_libs_picker_base::panel_component_libs_picker_base( wxWindow* pa
 
 	// Connect Events
 	this->Connect( wxEVT_SET_FOCUS, wxFocusEventHandler( panel_component_libs_picker_base::OnSetFocus ) );
+	this->Connect( wxEVT_UPDATE_UI, wxUpdateUIEventHandler( panel_component_libs_picker_base::OnUpdateUI ) );
 	m_browserNoteBook->Connect( wxEVT_COMMAND_NOTEBOOK_PAGE_CHANGED, wxNotebookEventHandler( panel_component_libs_picker_base::OnNotebookPageChanged ), NULL, this );
 	m_browserNoteBook->Connect( wxEVT_SET_FOCUS, wxFocusEventHandler( panel_component_libs_picker_base::OnSetFocus ), NULL, this );
 }
@@ -261,6 +262,7 @@ panel_component_libs_picker_base::~panel_component_libs_picker_base()
 {
 	// Disconnect Events
 	this->Disconnect( wxEVT_SET_FOCUS, wxFocusEventHandler( panel_component_libs_picker_base::OnSetFocus ) );
+	this->Disconnect( wxEVT_UPDATE_UI, wxUpdateUIEventHandler( panel_component_libs_picker_base::OnUpdateUI ) );
 	m_browserNoteBook->Disconnect( wxEVT_COMMAND_NOTEBOOK_PAGE_CHANGED, wxNotebookEventHandler( panel_component_libs_picker_base::OnNotebookPageChanged ), NULL, this );
 	m_browserNoteBook->Disconnect( wxEVT_SET_FOCUS, wxFocusEventHandler( panel_component_libs_picker_base::OnSetFocus ), NULL, this );
 

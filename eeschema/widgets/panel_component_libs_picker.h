@@ -17,14 +17,25 @@ class panel_component_libs_picker : public panel_component_libs_picker_base
 {
 public :
 	panel_component_libs_picker( wxWindow* aParent );
+
 //	~panel_hierarchy_browser();
 
-protected:
-//    void OnNotebookPageChanged( wxNotebookEvent& event ) override;
-//
-//    void OnSetFocus( wxFocusEvent& aEvent ) override;
 
-//    void OnSize( wxSizeEvent& aEvent ) override;
+protected:
+
+	virtual void OnUpdateUI( wxUpdateUIEvent& event ) override;
+
+	virtual void OnNotebookPageChanged( wxNotebookEvent& event ) override;
+
+//    virtual void OnSetFocus( wxFocusEvent& aEvent ) override;
+
+//    virtual void OnSize( wxSizeEvent& aEvent ) override;
+
+private :
+	void setFontSubChilds(wxWindowListNode* childNode, wxFont &wxf);
+
+	void getSubChilds(std::vector<wxWindow*> & wlist, unsigned int &count);
+
 
 };
 

@@ -69,6 +69,7 @@ class panel_component_libs_picker_base : public wxPanel
 
 		// Virtual event handlers, overide them in your derived class
 		virtual void OnSetFocus( wxFocusEvent& event ) { event.Skip(); }
+		virtual void OnUpdateUI( wxUpdateUIEvent& event ) { event.Skip(); }
 		virtual void OnNotebookPageChanged( wxNotebookEvent& event ) { event.Skip(); }
 
 
