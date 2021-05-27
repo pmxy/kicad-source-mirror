@@ -21,32 +21,44 @@ panel_hierarchy_browser::panel_hierarchy_browser( SCH_EDIT_FRAME* aParent) :
 	m_SchFrameEditor = aParent;
     m_currSheet 	 = m_SchFrameEditor->GetCurrentSheet();
 
-
-
-
 //	wxImageList *ilist = new wxImageList( 16, 16 );
 //	ilist->Add( wxIcon(wx_small_xpm) );
 //	m_hierarchyTree->AssignImageList( ilist );
 
 }
 
+void panel_hierarchy_browser::updateHierarchy( bool ebuild) {
 
-void panel_hierarchy_browser::rebuildList() {
+	m_rootSheet = &m_SchFrameEditor->Schematic().Root();
 
-	   m_rootSheet = &m_SchFrameEditor->Schematic().Root();
+	// DEBUG : Force rebuild for now, shadowing rebuild  (pmx-2021.05.27)
+	rebuild = true;
 
-	   m_hierarchyTree->DeleteAllItems();
+	if (rebuild) {
+		m_hierarchyTree->DeleteAllItems();
 
-	   wxFileName fn(m_rootSheet->GetFileName());
-	   wxTreeItemId root =  m_hierarchyTree->AddRoot( fn.GetName() );
-	   m_hierarchyTree->SetItemBold( root, true );
-	   wxTreeItemId next = m_hierarchyTree->AppendItem(root,"XXXX" );
+		wxFileName fn(m_rootSheet->GetFileName());
+		wxTreeItemId root =  m_hierarchyTree->AddRoot( fn.GetName() );
+		m_hierarchyTree->SetItemBold( root, true );
+		wxTreeItemId next = m_hierarchyTree->AppendItem(root,"XXXX" );
 
-	   m_hierarchyTree->ExpandAll ();
+		m_hierarchyTree->ExpandAll ();
 
-// Screen : filenalme with full path. Sheet : only filename
-//	    wxLogMessage( m_rootSheet->GetScreen()->GetFileName() + "*\n*"  + m_rootSheet->GetFileName() + "*" );
-//	    std::cerr << m_rootSheet->GetName() << "\n";
+	} else {
+
+// Find, compare, keep expanded/unexpanded status, insert "in place".
+// May require more sophisticated control than wxTreeCtrl ?? (pmx-2021.05.27)
+
+	}
+
+}
+
+void panel_hierarchy_browser::rebuildHierarchy() {
+
+	updateHierarchy(true);
+
+	m_hierarchyTree->ExpandAll ();
+
 }
 
 // (pmx-20210526) Returns a std::vector<wxWindow *> vector, and the calling function will

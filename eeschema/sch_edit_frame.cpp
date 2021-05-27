@@ -321,7 +321,7 @@ SCH_EDIT_FRAME::SCH_EDIT_FRAME( KIWAY* aKiway, wxWindow* aParent ) :
 
     UpdateTitle();
 
-    m_hierarchy_browser->rebuildList();
+    m_hierarchy_browser->rebuildHierarchy();
 
     // Default shutdown reason until a file is loaded
     KIPLATFORM::APP::SetShutdownBlockReason( this, _( "New schematic file is unsaved" ) );
@@ -809,7 +809,6 @@ void SCH_EDIT_FRAME::OnModify()
 
     GetScreen()->SetModify();
     GetScreen()->SetSave();
-    m_hierarchy_browser->rebuildList();
 
     if( ADVANCED_CFG::GetCfg().m_RealTimeConnectivity && CONNECTION_GRAPH::m_allowRealTime )
         RecalculateConnections( NO_CLEANUP );
@@ -836,6 +835,9 @@ void SCH_EDIT_FRAME::OnModify()
 
     if( !GetTitle().StartsWith( "*" ) )
         UpdateTitle();
+
+    m_hierarchy_browser->updateHierarchy();
+
 }
 
 
@@ -911,7 +913,7 @@ void SCH_EDIT_FRAME::UpdateHierarchyNavigator( bool aForceUpdate )
             FindHierarchyNavigator()->UpdateHierarchyTree();
     }
 
-    m_hierarchy_browser->rebuildList();
+    m_hierarchy_browser->updateHierarchy();
 
 }
 
@@ -964,6 +966,8 @@ void SCH_EDIT_FRAME::OnLoadFile( wxCommandEvent& event )
 
     if( fn.size() )
         OpenProjectFiles( std::vector<wxString>( 1, fn ) );
+
+    OnModify();
 }
 
 
@@ -999,6 +1003,9 @@ void SCH_EDIT_FRAME::NewProject()
 
         OpenProjectFiles( std::vector<wxString>( 1, create_me.GetFullPath() ), KICTL_CREATE );
         m_mruPath = create_me.GetPath();
+
+        OnModify();
+
     }
 }
 
@@ -1018,6 +1025,9 @@ void SCH_EDIT_FRAME::LoadProject()
         OpenProjectFiles( std::vector<wxString>( 1, dlg.GetPath() ) );
         m_mruPath = Prj().GetProjectPath();
     }
+
+    OnModify();
+
 }
 
 

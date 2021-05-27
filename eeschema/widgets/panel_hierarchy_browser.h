@@ -24,7 +24,8 @@ public :
 	panel_hierarchy_browser( SCH_EDIT_FRAME* aParent );
 //	~panel_hierarchy_browser();
 
-	void rebuildList();
+	void rebuildHierarchy();
+	void updateHierarchy(bool rebuild = false);
 
 protected:
 
