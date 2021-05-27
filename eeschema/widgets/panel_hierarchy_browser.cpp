@@ -27,7 +27,7 @@ panel_hierarchy_browser::panel_hierarchy_browser( SCH_EDIT_FRAME* aParent) :
 
 }
 
-void panel_hierarchy_browser::updateHierarchy( bool ebuild) {
+void panel_hierarchy_browser::updateHierarchy( bool rebuild) {
 
 	m_rootSheet = &m_SchFrameEditor->Schematic().Root();
 
