@@ -267,7 +267,7 @@ SCH_EDIT_FRAME::SCH_EDIT_FRAME( KIWAY* aKiway, wxWindow* aParent ) :
     CreateInfoBar();
 
     m_hierarchy_browser = new panel_hierarchy_browser(this);
-    m_library_picker    = new panel_component_libs_picker(this); // temp
+    m_library_picker    = new panel_component_libs_picker(this);
 
     m_auimgr.AddPane( m_hierarchy_browser, EDA_PANE().SideToolBox().Name( "Hierarchy" )
             		 .Left().Layer( 6 ).Floatable(false).Gripper(false) );
@@ -321,11 +321,14 @@ SCH_EDIT_FRAME::SCH_EDIT_FRAME( KIWAY* aKiway, wxWindow* aParent ) :
 
     UpdateTitle();
 
+    m_hierarchy_browser->rebuildList();
+
     // Default shutdown reason until a file is loaded
     KIPLATFORM::APP::SetShutdownBlockReason( this, _( "New schematic file is unsaved" ) );
 
     // Ensure the window is on top
     Raise();
+
 }
 
 
@@ -589,6 +592,8 @@ void SCH_EDIT_FRAME::CreateScreens()
         SCH_SCREEN* screen = new SCH_SCREEN( m_schematic );
         SetScreen( screen );
     }
+
+
 }
 
 
@@ -804,6 +809,7 @@ void SCH_EDIT_FRAME::OnModify()
 
     GetScreen()->SetModify();
     GetScreen()->SetSave();
+    m_hierarchy_browser->rebuildList();
 
     if( ADVANCED_CFG::GetCfg().m_RealTimeConnectivity && CONNECTION_GRAPH::m_allowRealTime )
         RecalculateConnections( NO_CLEANUP );
@@ -825,6 +831,8 @@ void SCH_EDIT_FRAME::OnModify()
 
     GetCanvas()->Refresh();
     UpdateHierarchyNavigator();
+
+
 
     if( !GetTitle().StartsWith( "*" ) )
         UpdateTitle();
@@ -902,6 +910,9 @@ void SCH_EDIT_FRAME::UpdateHierarchyNavigator( bool aForceUpdate )
         if( FindHierarchyNavigator() )
             FindHierarchyNavigator()->UpdateHierarchyTree();
     }
+
+    m_hierarchy_browser->rebuildList();
+
 }
 
 

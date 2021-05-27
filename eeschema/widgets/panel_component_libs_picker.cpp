@@ -18,12 +18,10 @@ panel_component_libs_picker::panel_component_libs_picker( wxWindow* aParent ) : 
 
 }
 
-// (pmx-20210526) Horrible, code... but works.
-// Returns a std::vector<wxWindow *> vector, and the calling function will
+// (pmx-20210526) Returns a std::vector<wxWindow *> vector, and the calling function will
 // do whaterver is needed on its elements.
-// wher can I olace this in the class hierarchy (Kicad) to reuse it ???
-
-
+// Where can I place this in the class hierarchy (Kicad) to reuse it ???
+// cloned in class panel_component_libs_picker and class panel_hierarchy_browser
 static void recurseSubWins(std::vector<wxWindow*> & wlist, wxWindowListNode *childNode, unsigned int &count) {
 	while (childNode)
 	{
@@ -64,9 +62,6 @@ void panel_component_libs_picker::OnUpdateUI( wxUpdateUIEvent& event ) {
 	for (auto w : wl) {
 		w->	SetFont( wxf );
 	}
-
-	//	setFontSubChilds(node, wxf);
-
 }
 
 

@@ -48,6 +48,7 @@ class panel_hierarchy_browser_base : public wxPanel
 		virtual void OnSetFocus( wxFocusEvent& event ) { event.Skip(); }
 		virtual void OnNotebookPageChanged( wxNotebookEvent& event ) { event.Skip(); }
 		virtual void OnTreeSelChanged( wxTreeEvent& event ) { event.Skip(); }
+		virtual void OnUpdateUI( wxUpdateUIEvent& event ) { event.Skip(); }
 		virtual void m_filesTreeOnTreeSelChanged( wxTreeEvent& event ) { event.Skip(); }
 
 

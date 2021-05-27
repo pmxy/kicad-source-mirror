@@ -11,7 +11,7 @@
 
 panel_hierarchy_browser_base::panel_hierarchy_browser_base( wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size, long style, const wxString& name ) : wxPanel( parent, id, pos, size, style, name )
 {
-	this->SetFont( wxFont( 8, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false, wxEmptyString ) );
+	this->SetFont( wxFont( 9, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false, wxEmptyString ) );
 	this->SetBackgroundColour( wxSystemSettings::GetColour( wxSYS_COLOUR_BTNFACE ) );
 
 	wxBoxSizer* bSizer13;
@@ -99,6 +99,7 @@ panel_hierarchy_browser_base::panel_hierarchy_browser_base( wxWindow* parent, wx
 	m_browserNoteBook->Connect( wxEVT_COMMAND_NOTEBOOK_PAGE_CHANGED, wxNotebookEventHandler( panel_hierarchy_browser_base::OnNotebookPageChanged ), NULL, this );
 	m_browserNoteBook->Connect( wxEVT_SET_FOCUS, wxFocusEventHandler( panel_hierarchy_browser_base::OnSetFocus ), NULL, this );
 	m_hierarchyTree->Connect( wxEVT_COMMAND_TREE_SEL_CHANGED, wxTreeEventHandler( panel_hierarchy_browser_base::OnTreeSelChanged ), NULL, this );
+	m_hierarchyTree->Connect( wxEVT_UPDATE_UI, wxUpdateUIEventHandler( panel_hierarchy_browser_base::OnUpdateUI ), NULL, this );
 	m_filesTree->Connect( wxEVT_SET_FOCUS, wxFocusEventHandler( panel_hierarchy_browser_base::OnSetFocus ), NULL, this );
 	m_filesTree->Connect( wxEVT_COMMAND_TREE_SEL_CHANGED, wxTreeEventHandler( panel_hierarchy_browser_base::m_filesTreeOnTreeSelChanged ), NULL, this );
 }
@@ -110,6 +111,7 @@ panel_hierarchy_browser_base::~panel_hierarchy_browser_base()
 	m_browserNoteBook->Disconnect( wxEVT_COMMAND_NOTEBOOK_PAGE_CHANGED, wxNotebookEventHandler( panel_hierarchy_browser_base::OnNotebookPageChanged ), NULL, this );
 	m_browserNoteBook->Disconnect( wxEVT_SET_FOCUS, wxFocusEventHandler( panel_hierarchy_browser_base::OnSetFocus ), NULL, this );
 	m_hierarchyTree->Disconnect( wxEVT_COMMAND_TREE_SEL_CHANGED, wxTreeEventHandler( panel_hierarchy_browser_base::OnTreeSelChanged ), NULL, this );
+	m_hierarchyTree->Disconnect( wxEVT_UPDATE_UI, wxUpdateUIEventHandler( panel_hierarchy_browser_base::OnUpdateUI ), NULL, this );
 	m_filesTree->Disconnect( wxEVT_SET_FOCUS, wxFocusEventHandler( panel_hierarchy_browser_base::OnSetFocus ), NULL, this );
 	m_filesTree->Disconnect( wxEVT_COMMAND_TREE_SEL_CHANGED, wxTreeEventHandler( panel_hierarchy_browser_base::m_filesTreeOnTreeSelChanged ), NULL, this );
 
