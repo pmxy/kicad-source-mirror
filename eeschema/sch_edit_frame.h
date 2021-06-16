@@ -62,6 +62,11 @@ class wxFindReplaceData;
 class RESCUER;
 class HIERARCHY_NAVIG_DLG;
 
+
+
+class panel_hierarchy_browser;
+class panel_component_libs_picker;
+
 // @todo Move this to transform alone with all of the transform manipulation code.
 /// enum used in RotationMiroir()
 enum SYMBOL_ORIENTATION_T
@@ -926,6 +931,9 @@ private:
                                                   ///< to call a custom net list generator.
 
     DIALOG_SCH_FIND*        m_findReplaceDialog;
+
+    panel_hierarchy_browser *		m_hierarchy_browser;
+    panel_component_libs_picker *	m_library_picker;
 };
 
 

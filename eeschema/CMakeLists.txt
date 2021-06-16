@@ -134,6 +134,10 @@ set( EESCHEMA_WIDGETS
     widgets/pin_type_combobox.cpp
     widgets/symbol_preview_widget.cpp
     widgets/symbol_tree_pane.cpp
+    widgets/panel_hierarchy_browser_base.cpp
+    widgets/panel_hierarchy_browser.cpp
+    widgets/panel_component_libs_picker_base.cpp
+    widgets/panel_component_libs_picker.cpp
     )
 
 

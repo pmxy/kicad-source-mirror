@@ -85,6 +85,9 @@
 #include <gal/graphics_abstraction_layer.h>
 #include <drawing_sheet/ds_proxy_view_item.h>
 
+#include <widgets/panel_hierarchy_browser.h>
+#include <widgets/panel_component_libs_picker.h>
+
 // non-member so it can be moved easily, and kept REALLY private.
 // Do NOT Clear() in here.
 static void add_search_paths( SEARCH_STACK* aDst, const SEARCH_STACK& aSrc, int aIndex )
@@ -263,18 +266,35 @@ SCH_EDIT_FRAME::SCH_EDIT_FRAME( KIWAY* aKiway, wxWindow* aParent ) :
     m_auimgr.SetManagedWindow( this );
 
     CreateInfoBar();
+
+    m_hierarchy_browser = new panel_hierarchy_browser(this);
+    m_library_picker    = new panel_component_libs_picker(this);
+
+    m_auimgr.AddPane( m_hierarchy_browser, EDA_PANE().SideToolBox().Name( "Hierarchy" )
+            		 .Left().Layer( 6 ).Floatable(false).Gripper(false) );
+
+    m_auimgr.AddPane( m_library_picker, EDA_PANE().SideToolBox().Name( "CompPlacer" )
+            		  .Right().Layer( 6 ).Floatable(false).Gripper(false) );
+
     m_auimgr.AddPane( m_mainToolBar, EDA_PANE().HToolbar().Name( "MainToolbar" )
                       .Top().Layer( 6 ) );
+
     m_auimgr.AddPane( m_optionsToolBar, EDA_PANE().VToolbar().Name( "OptToolbar" )
                       .Left().Layer( 3 ) );
+
     m_auimgr.AddPane( m_drawToolBar, EDA_PANE().VToolbar().Name( "ToolsToolbar" )
                       .Right().Layer( 2 ) );
+
     m_auimgr.AddPane( GetCanvas(), EDA_PANE().Canvas().Name( "DrawFrame" )
                       .Center() );
     m_auimgr.AddPane( m_messagePanel, EDA_PANE().Messages().Name( "MsgPanel" )
                       .Bottom().Layer( 6 ) );
 
     FinishAUIInitialization();
+
+    unsigned int flags_wxAUI = m_auimgr.GetFlags();
+    flags_wxAUI = flags_wxAUI | wxAUI_MGR_LIVE_RESIZE;
+    m_auimgr.SetFlags(flags_wxAUI);
 
     resolveCanvasType();
     SwitchCanvas( m_canvasType );
@@ -302,11 +322,14 @@ SCH_EDIT_FRAME::SCH_EDIT_FRAME( KIWAY* aKiway, wxWindow* aParent ) :
 
     UpdateTitle();
 
+    m_hierarchy_browser->rebuildHierarchy();
+
     // Default shutdown reason until a file is loaded
     KIPLATFORM::APP::SetShutdownBlockReason( this, _( "New schematic file is unsaved" ) );
 
     // Ensure the window is on top
     Raise();
+
 }
 
 
@@ -570,6 +593,8 @@ void SCH_EDIT_FRAME::CreateScreens()
         SCH_SCREEN* screen = new SCH_SCREEN( m_schematic );
         SetScreen( screen );
     }
+
+
 }
 
 
@@ -806,8 +831,13 @@ void SCH_EDIT_FRAME::OnModify()
     GetCanvas()->Refresh();
     UpdateHierarchyNavigator();
 
+
+
     if( !GetTitle().StartsWith( "*" ) )
         UpdateTitle();
+
+    m_hierarchy_browser->updateHierarchy();
+
 }
 
 
@@ -882,6 +912,9 @@ void SCH_EDIT_FRAME::UpdateHierarchyNavigator( bool aForceUpdate )
         if( FindHierarchyNavigator() )
             FindHierarchyNavigator()->UpdateHierarchyTree();
     }
+
+    m_hierarchy_browser->updateHierarchy();
+
 }
 
 
@@ -933,6 +966,8 @@ void SCH_EDIT_FRAME::OnLoadFile( wxCommandEvent& event )
 
     if( fn.size() )
         OpenProjectFiles( std::vector<wxString>( 1, fn ) );
+
+    OnModify();
 }
 
 
@@ -968,6 +1003,9 @@ void SCH_EDIT_FRAME::NewProject()
 
         OpenProjectFiles( std::vector<wxString>( 1, create_me.GetFullPath() ), KICTL_CREATE );
         m_mruPath = create_me.GetPath();
+
+        OnModify();
+
     }
 }
 
@@ -987,6 +1025,9 @@ void SCH_EDIT_FRAME::LoadProject()
         OpenProjectFiles( std::vector<wxString>( 1, dlg.GetPath() ) );
         m_mruPath = Prj().GetProjectPath();
     }
+
+    OnModify();
+
 }
 
 

@@ -628,6 +628,8 @@ bool SCH_EDIT_FRAME::OpenProjectFiles( const std::vector<wxString>& aFileSet, in
         m_infoBar->ShowMessage( _( "Schematic is read only." ), wxICON_WARNING );
     }
 
+    OnModify();
+
 #ifdef PROFILE
     openFiles.Show();
 #endif
@@ -1169,6 +1171,7 @@ bool SCH_EDIT_FRAME::importFile( const wxString& aFileName, int aFileType )
 
             UpdateHierarchyNavigator();
             UpdateTitle();
+            OnModify();
         }
         catch( const IO_ERROR& ioe )
         {

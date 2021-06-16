@@ -115,6 +115,7 @@ public:
     bool   m_ShowGraphicsDisabled;
     bool   m_ShowUmbilicals;
 
+    bool   m_ShowGreyedOut;
     bool   m_OverrideItemColors;
 
     double m_TextOffsetRatio;        // Proportion of font size to offset text above/below
