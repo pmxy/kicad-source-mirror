@@ -45,6 +45,8 @@ private :
 
 	void setPanelFonts();
 
+	void recurseHierarchy(SCH_SHEET_PATH &aList, wxTreeItemId &prev);
+
 // Use same names than HIERARCHY_NAVIG_DLG in hierarch.cpp
 
     SCH_SHEET_PATH  	m_currSheet;

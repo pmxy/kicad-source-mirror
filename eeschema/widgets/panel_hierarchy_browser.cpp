@@ -11,8 +11,6 @@
 #include <widgets/panel_hierarchy_browser.h>
 
 
-
-
 panel_hierarchy_browser::panel_hierarchy_browser( SCH_EDIT_FRAME* aParent) :
 							panel_hierarchy_browser_base( (wxWindow*)(aParent) )
 {
@@ -27,20 +25,67 @@ panel_hierarchy_browser::panel_hierarchy_browser( SCH_EDIT_FRAME* aParent) :
 
 }
 
+void panel_hierarchy_browser::recurseHierarchy(SCH_SHEET_PATH &aList, wxTreeItemId &prev) {
+
+	std::vector<SCH_ITEM*> sheetChildren;
+	aList.LastScreen()->GetSheets( &sheetChildren );
+
+	for( SCH_ITEM* aItem : sheetChildren ) {
+
+		SCH_SHEET* sheet = static_cast<SCH_SHEET*>( aItem );
+		aList.push_back( sheet );
+		wxFileName fn(sheet->GetFileName());
+
+		wxTreeItemId next  = m_hierarchyTree->AppendItem(prev, fn.GetName() );
+		if (aList.LastScreen()->IsModified()) {
+			m_hierarchyTree->SetItemBold( next, true );
+			m_hierarchyTree->SetItemBackgroundColour( next, wxColour(240,255,120) );
+		}
+		m_nbsheets++;
+
+		if( aList == m_currSheet ) {
+			m_hierarchyTree->EnsureVisible( next );
+			m_hierarchyTree->SelectItem( next );
+		}
+
+		recurseHierarchy(aList, next);
+
+		aList.pop_back();
+
+		if (m_nbsheets > 200) // Safety ?? Was in the original code, in hierarch.cpp
+			return;
+	}
+}
+
 void panel_hierarchy_browser::updateHierarchy( bool rebuild) {
 
-	m_rootSheet = &m_SchFrameEditor->Schematic().Root();
-
-	// DEBUG : Force rebuild for now, shadowing rebuild  (pmx-2021.05.27)
+	// DEBUG : Force rebuild for now, shadowing "rebuild" param  (pmx-2021.05.27)
 	rebuild = true;
+
+	m_rootSheet = &m_SchFrameEditor->Schematic().Root();
+	m_currSheet =  m_SchFrameEditor->GetCurrentSheet();
 
 	if (rebuild) {
 		m_hierarchyTree->DeleteAllItems();
+		m_nbsheets = 1;
+
+	    m_list.clear();
+	    m_list.push_back( &m_SchFrameEditor->Schematic().Root() );
 
 		wxFileName fn(m_rootSheet->GetFileName());
 		wxTreeItemId root =  m_hierarchyTree->AddRoot( fn.GetName() );
+
 		m_hierarchyTree->SetItemBold( root, true );
-//		wxTreeItemId next = m_hierarchyTree->AppendItem(root,"XXXX" );
+
+		if (m_list.LastScreen()->IsModified()) {
+			m_hierarchyTree->SetItemBold( root, true );
+			m_hierarchyTree->SetItemBackgroundColour( root, wxColour(240,255,120) );
+		} else if( m_currSheet.Last() == &m_SchFrameEditor->Schematic().Root() ) {
+			m_hierarchyTree->SelectItem( root );
+		}
+
+
+		recurseHierarchy( m_list, root);
 
 		m_hierarchyTree->ExpandAll ();
 
@@ -50,6 +95,7 @@ void panel_hierarchy_browser::updateHierarchy( bool rebuild) {
 // May require more sophisticated control than wxTreeCtrl ?? (pmx-2021.05.27)
 
 	}
+
 }
 
 void panel_hierarchy_browser::rebuildHierarchy() {
