@@ -40,7 +40,7 @@ void panel_hierarchy_browser::updateHierarchy( bool rebuild) {
 		wxFileName fn(m_rootSheet->GetFileName());
 		wxTreeItemId root =  m_hierarchyTree->AddRoot( fn.GetName() );
 		m_hierarchyTree->SetItemBold( root, true );
-		wxTreeItemId next = m_hierarchyTree->AppendItem(root,"XXXX" );
+//		wxTreeItemId next = m_hierarchyTree->AppendItem(root,"XXXX" );
 
 		m_hierarchyTree->ExpandAll ();
 
@@ -50,7 +50,6 @@ void panel_hierarchy_browser::updateHierarchy( bool rebuild) {
 // May require more sophisticated control than wxTreeCtrl ?? (pmx-2021.05.27)
 
 	}
-
 }
 
 void panel_hierarchy_browser::rebuildHierarchy() {

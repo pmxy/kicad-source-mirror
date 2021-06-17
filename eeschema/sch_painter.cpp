@@ -1484,7 +1484,7 @@ void SCH_PAINTER::draw( SCH_SYMBOL* aSymbol, int aLayer )
    	}
 
     // Use dummy part if the actual couldn't be found (or couldn't be locked).
-    LIB_PART* originalPart = aSymbol->GetPartRef() ? aSymbol->GetPartRef().get() : dummy();
+    LIB_SYMBOL* originalSymbol = aSymbol->GetLibSymbolRef() ? aSymbol->GetLibSymbolRef().get() : dummy();
 
     LIB_PINS  originalPins;
     originalSymbol->GetPins( originalPins, unit, convert );
@@ -1533,7 +1533,7 @@ void SCH_PAINTER::draw( SCH_SYMBOL* aSymbol, int aLayer )
 
     	if (includeStatus) {
 
-    		BOX2I box = static_cast<const SCH_COMPONENT*>( aSymbol )->GetBodyBoundingBox();
+    		BOX2I box = static_cast<const SCH_SYMBOL*>( aSymbol )->GetBodyBoundingBox();
 
     		m_gal->SetIsFill( false );
     		m_gal->SetIsStroke( true );
@@ -1592,12 +1592,10 @@ void SCH_PAINTER::draw( SCH_SYMBOL* aSymbol, int aLayer )
     	for( const SCH_FIELD& field : aSymbol->GetFields() )
     		draw( &field, aLayer );
 
-        draw( &tempPart, aLayer, false, aSymbol->GetUnit(), aSymbol->GetConvert() );
+        draw( &tempSymbol, aLayer, false, aSymbol->GetUnit(), aSymbol->GetConvert() );
 
     	m_schSettings.m_ShowGreyedOut = save_ShowGreyedOut;
 
-
->>>>>>> test_flavours
 }
 
 
@@ -1804,10 +1802,10 @@ void SCH_PAINTER::draw( const SCH_SHEET *aSheet, int aLayer )
 			// For aesthetic reasons, the SHEET_PIN is drawn with a small offset of width / 2
 			switch( sheetPin->GetEdge() )
 			{
-			case SHEET_TOP_SIDE:    offset_pos.y += KiROUND( width / 2.0 ); break;
-			case SHEET_BOTTOM_SIDE: offset_pos.y -= KiROUND( width / 2.0 ); break;
-			case SHEET_RIGHT_SIDE:  offset_pos.x -= KiROUND( width / 2.0 ); break;
-			case SHEET_LEFT_SIDE:   offset_pos.x += KiROUND( width / 2.0 ); break;
+			case SHEET_SIDE::TOP:    offset_pos.y += KiROUND( width / 2.0 ); break;
+			case SHEET_SIDE::BOTTOM: offset_pos.y -= KiROUND( width / 2.0 ); break;
+			case SHEET_SIDE::RIGHT:  offset_pos.x -= KiROUND( width / 2.0 ); break;
+			case SHEET_SIDE::LEFT:   offset_pos.x += KiROUND( width / 2.0 ); break;
 			default: break;
 			}
 

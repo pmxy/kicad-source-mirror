@@ -11,10 +11,21 @@
 
 panel_component_libs_picker::panel_component_libs_picker( wxWindow* aParent ) : panel_component_libs_picker_base( aParent ) {
 
-//
-//    m_componentSearch->SetHint(_("Component Name"));
-//    m_libSearch      ->SetHint(_("Library Name"));
-//    m_parameterSearch->SetHint(_("Parameter Name"));
+	wxFont wxf = wxFont( 8, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL,
+			wxFONTWEIGHT_NORMAL, false, wxEmptyString );
+
+	auto wl = std::vector<wxWindow*>();
+	unsigned int count = 0;
+	getSubChilds(wl, count);
+
+	for (auto w : wl) {
+		w->	SetFont( wxf );
+	}
+
+    m_componentSearch->SetHint(_("Component Name"));
+    m_libSearch      ->SetHint(_("Library Name"));
+    m_parameterSearch->SetHint(_("Parameter Name"));
+
 
 }
 
@@ -52,16 +63,6 @@ void panel_component_libs_picker::getSubChilds(std::vector<wxWindow*> & wlist, u
 void panel_component_libs_picker::OnUpdateUI( wxUpdateUIEvent& event ) {
 	event.Skip();
 
-	wxFont wxf = wxFont( 8, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL,
-			wxFONTWEIGHT_NORMAL, false, wxEmptyString );
-
-	auto wl = std::vector<wxWindow*>();
-	unsigned int count = 0;
-	getSubChilds(wl, count);
-
-	for (auto w : wl) {
-		w->	SetFont( wxf );
-	}
 }
 
 
