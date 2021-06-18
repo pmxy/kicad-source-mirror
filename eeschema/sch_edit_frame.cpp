@@ -805,11 +805,20 @@ void SCH_EDIT_FRAME::OnModify()
 {
     wxASSERT( GetScreen() );
 
+    bool update_hierarchies = false;
+
     if( !GetScreen() )
         return;
+// we only want to update the hierachy tree (the new side panel) 
+// for the first modification, in order to displau the "modified" ststus.
+// NOTE : Subsheet additions / deletions are processed elsewhere. 
+// Works so far, but needs more testing pmx-2021.06.18.
 
-    update_hierarchies = true;
-  
+   if(!GetScreen()->IsContentModified()) {
+        update_hierarchies = true;
+        GetScreen()->SetContentModified();
+    }
+
 
     if( ADVANCED_CFG::GetCfg().m_RealTimeConnectivity && CONNECTION_GRAPH::m_allowRealTime )
         RecalculateConnections( NO_CLEANUP );
@@ -829,9 +838,11 @@ void SCH_EDIT_FRAME::OnModify()
                 return false;
             } );
 
+// Refresh necessary everytime ? pmx-2021.06.18
     GetCanvas()->Refresh();
 
-    UpdateHierarchyNavigator();
+    if (update_hierarchies)
+        UpdateHierarchyNavigator();
 
     if( !GetTitle().StartsWith( "*" ) )
         UpdateTitle();
