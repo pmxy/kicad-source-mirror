@@ -62,6 +62,8 @@
 #include <paths.h>
 #include <wx_filename.h>  // For ::ResolvePossibleSymlinks
 
+#include <widgets/panel_hierarchy_browser.h>
+
 bool SCH_EDIT_FRAME::SaveEEFile( SCH_SHEET* aSheet, bool aSaveUnderNewName )
 {
     wxString msg;
@@ -193,6 +195,7 @@ bool SCH_EDIT_FRAME::SaveEEFile( SCH_SHEET* aSheet, bool aSaveUnderNewName )
         }
 
         screen->SetContentModified( false );
+
         UpdateTitle();
 
         msg.Printf( _( "File \"%s\" saved." ),  screen->GetFileName() );
@@ -238,6 +241,7 @@ void SCH_EDIT_FRAME::Save_File( bool doSaveAs )
     }
 
     UpdateTitle();
+    m_hierarchy_browser->rebuildHierarchy();
 }
 
 
@@ -628,11 +632,11 @@ bool SCH_EDIT_FRAME::OpenProjectFiles( const std::vector<wxString>& aFileSet, in
         m_infoBar->ShowMessage( _( "Schematic is read only." ), wxICON_WARNING );
     }
 
-    OnModify();
-
 #ifdef PROFILE
     openFiles.Show();
 #endif
+
+    m_hierarchy_browser->rebuildHierarchy();
 
     return true;
 }
@@ -1022,6 +1026,8 @@ bool SCH_EDIT_FRAME::SaveProject()
 
     m_infoBar->DismissOutdatedSave();
 
+    m_hierarchy_browser->rebuildHierarchy();
+
     return success;
 }
 
@@ -1066,7 +1072,7 @@ bool SCH_EDIT_FRAME::doAutoSave()
         screens.GetScreen( i )->SetFileName( fn.GetFullPath() );
 
         if( SaveEEFile( screens.GetSheet( i ), false ) )
-            screens.GetScreen( i )->SetContentModified();
+            screens.GetScreen( i )->SetContentModified(false); // changed to false. pmx-2021.06.18
         else
             autoSaveOk = false;
 
@@ -1085,6 +1091,8 @@ bool SCH_EDIT_FRAME::doAutoSave()
     }
 
     SetTitle( title );
+
+    m_hierarchy_browser->rebuildHierarchy();
 
     return autoSaveOk;
 }
@@ -1173,7 +1181,6 @@ bool SCH_EDIT_FRAME::importFile( const wxString& aFileName, int aFileType )
 
             UpdateHierarchyNavigator();
             UpdateTitle();
-            OnModify();
         }
         catch( const IO_ERROR& ioe )
         {

@@ -98,10 +98,14 @@ panel_hierarchy_browser_base::panel_hierarchy_browser_base( wxWindow* parent, wx
 	this->Connect( wxEVT_SET_FOCUS, wxFocusEventHandler( panel_hierarchy_browser_base::OnSetFocus ) );
 	m_browserNoteBook->Connect( wxEVT_COMMAND_NOTEBOOK_PAGE_CHANGED, wxNotebookEventHandler( panel_hierarchy_browser_base::OnNotebookPageChanged ), NULL, this );
 	m_browserNoteBook->Connect( wxEVT_SET_FOCUS, wxFocusEventHandler( panel_hierarchy_browser_base::OnSetFocus ), NULL, this );
+	m_hierarchyTree->Connect( wxEVT_COMMAND_TREE_ITEM_ACTIVATED, wxTreeEventHandler( panel_hierarchy_browser_base::OnTreeItemActivated ), NULL, this );
 	m_hierarchyTree->Connect( wxEVT_COMMAND_TREE_SEL_CHANGED, wxTreeEventHandler( panel_hierarchy_browser_base::OnTreeSelChanged ), NULL, this );
+	m_hierarchyTree->Connect( wxEVT_COMMAND_TREE_SEL_CHANGING, wxTreeEventHandler( panel_hierarchy_browser_base::OnTreeSelChanging ), NULL, this );
 	m_hierarchyTree->Connect( wxEVT_UPDATE_UI, wxUpdateUIEventHandler( panel_hierarchy_browser_base::OnUpdateUI ), NULL, this );
+	m_filesTree->Connect( wxEVT_CHAR, wxKeyEventHandler( panel_hierarchy_browser_base::OnChar ), NULL, this );
 	m_filesTree->Connect( wxEVT_SET_FOCUS, wxFocusEventHandler( panel_hierarchy_browser_base::OnSetFocus ), NULL, this );
-	m_filesTree->Connect( wxEVT_COMMAND_TREE_SEL_CHANGED, wxTreeEventHandler( panel_hierarchy_browser_base::m_filesTreeOnTreeSelChanged ), NULL, this );
+	m_filesTree->Connect( wxEVT_COMMAND_TREE_ITEM_ACTIVATED, wxTreeEventHandler( panel_hierarchy_browser_base::OnTreeItemActivated ), NULL, this );
+	m_filesTree->Connect( wxEVT_COMMAND_TREE_SEL_CHANGED, wxTreeEventHandler( panel_hierarchy_browser_base::OnTreeSelChanged ), NULL, this );
 }
 
 panel_hierarchy_browser_base::~panel_hierarchy_browser_base()
@@ -110,9 +114,13 @@ panel_hierarchy_browser_base::~panel_hierarchy_browser_base()
 	this->Disconnect( wxEVT_SET_FOCUS, wxFocusEventHandler( panel_hierarchy_browser_base::OnSetFocus ) );
 	m_browserNoteBook->Disconnect( wxEVT_COMMAND_NOTEBOOK_PAGE_CHANGED, wxNotebookEventHandler( panel_hierarchy_browser_base::OnNotebookPageChanged ), NULL, this );
 	m_browserNoteBook->Disconnect( wxEVT_SET_FOCUS, wxFocusEventHandler( panel_hierarchy_browser_base::OnSetFocus ), NULL, this );
+	m_hierarchyTree->Disconnect( wxEVT_COMMAND_TREE_ITEM_ACTIVATED, wxTreeEventHandler( panel_hierarchy_browser_base::OnTreeItemActivated ), NULL, this );
 	m_hierarchyTree->Disconnect( wxEVT_COMMAND_TREE_SEL_CHANGED, wxTreeEventHandler( panel_hierarchy_browser_base::OnTreeSelChanged ), NULL, this );
+	m_hierarchyTree->Disconnect( wxEVT_COMMAND_TREE_SEL_CHANGING, wxTreeEventHandler( panel_hierarchy_browser_base::OnTreeSelChanging ), NULL, this );
 	m_hierarchyTree->Disconnect( wxEVT_UPDATE_UI, wxUpdateUIEventHandler( panel_hierarchy_browser_base::OnUpdateUI ), NULL, this );
+	m_filesTree->Disconnect( wxEVT_CHAR, wxKeyEventHandler( panel_hierarchy_browser_base::OnChar ), NULL, this );
 	m_filesTree->Disconnect( wxEVT_SET_FOCUS, wxFocusEventHandler( panel_hierarchy_browser_base::OnSetFocus ), NULL, this );
-	m_filesTree->Disconnect( wxEVT_COMMAND_TREE_SEL_CHANGED, wxTreeEventHandler( panel_hierarchy_browser_base::m_filesTreeOnTreeSelChanged ), NULL, this );
+	m_filesTree->Disconnect( wxEVT_COMMAND_TREE_ITEM_ACTIVATED, wxTreeEventHandler( panel_hierarchy_browser_base::OnTreeItemActivated ), NULL, this );
+	m_filesTree->Disconnect( wxEVT_COMMAND_TREE_SEL_CHANGED, wxTreeEventHandler( panel_hierarchy_browser_base::OnTreeSelChanged ), NULL, this );
 
 }

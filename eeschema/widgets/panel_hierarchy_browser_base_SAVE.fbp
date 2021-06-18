@@ -358,7 +358,9 @@
                                                                 <property name="window_extra_style"></property>
                                                                 <property name="window_name"></property>
                                                                 <property name="window_style"></property>
+                                                                <event name="OnTreeItemActivated">OnTreeItemActivated</event>
                                                                 <event name="OnTreeSelChanged">OnTreeSelChanged</event>
+                                                                <event name="OnTreeSelChanging">OnTreeSelChanging</event>
                                                                 <event name="OnUpdateUI">OnUpdateUI</event>
                                                             </object>
                                                         </object>
@@ -481,8 +483,10 @@
                                                                 <property name="window_extra_style"></property>
                                                                 <property name="window_name"></property>
                                                                 <property name="window_style"></property>
+                                                                <event name="OnChar">OnChar</event>
                                                                 <event name="OnSetFocus">OnSetFocus</event>
-                                                                <event name="OnTreeSelChanged">m_filesTreeOnTreeSelChanged</event>
+                                                                <event name="OnTreeItemActivated">OnTreeItemActivated</event>
+                                                                <event name="OnTreeSelChanged">OnTreeSelChanged</event>
                                                             </object>
                                                         </object>
                                                     </object>

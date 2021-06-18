@@ -808,7 +808,8 @@ void SCH_EDIT_FRAME::OnModify()
     if( !GetScreen() )
         return;
 
-    GetScreen()->SetContentModified();
+    update_hierarchies = true;
+  
 
     if( ADVANCED_CFG::GetCfg().m_RealTimeConnectivity && CONNECTION_GRAPH::m_allowRealTime )
         RecalculateConnections( NO_CLEANUP );
@@ -829,14 +830,11 @@ void SCH_EDIT_FRAME::OnModify()
             } );
 
     GetCanvas()->Refresh();
+
     UpdateHierarchyNavigator();
-
-
 
     if( !GetTitle().StartsWith( "*" ) )
         UpdateTitle();
-
-    m_hierarchy_browser->updateHierarchy();
 
 }
 
@@ -898,6 +896,8 @@ HIERARCHY_NAVIG_DLG* SCH_EDIT_FRAME::FindHierarchyNavigator()
 
 void SCH_EDIT_FRAME::UpdateHierarchyNavigator( bool aForceUpdate )
 {
+    m_hierarchy_browser->rebuildHierarchy();
+   
     if( aForceUpdate )
     {
         if( FindHierarchyNavigator() )
@@ -912,9 +912,6 @@ void SCH_EDIT_FRAME::UpdateHierarchyNavigator( bool aForceUpdate )
         if( FindHierarchyNavigator() )
             FindHierarchyNavigator()->UpdateHierarchyTree();
     }
-
-    m_hierarchy_browser->updateHierarchy();
-
 }
 
 
@@ -966,8 +963,6 @@ void SCH_EDIT_FRAME::OnLoadFile( wxCommandEvent& event )
 
     if( fn.size() )
         OpenProjectFiles( std::vector<wxString>( 1, fn ) );
-
-    OnModify();
 }
 
 
@@ -1004,8 +999,6 @@ void SCH_EDIT_FRAME::NewProject()
         OpenProjectFiles( std::vector<wxString>( 1, create_me.GetFullPath() ), KICTL_CREATE );
         m_mruPath = create_me.GetPath();
 
-        OnModify();
-
     }
 }
 
@@ -1025,8 +1018,6 @@ void SCH_EDIT_FRAME::LoadProject()
         OpenProjectFiles( std::vector<wxString>( 1, dlg.GetPath() ) );
         m_mruPath = Prj().GetProjectPath();
     }
-
-    OnModify();
 
 }
 
@@ -1313,6 +1304,7 @@ void SCH_EDIT_FRAME::UpdateTitle()
     }
 
     SetTitle( title );
+//    m_hierarchy_browser->rebuildHierarchy();
 }
 
 

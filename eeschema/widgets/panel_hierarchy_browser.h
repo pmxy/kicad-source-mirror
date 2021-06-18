@@ -18,6 +18,7 @@
 #include <widgets/panel_hierarchy_browser_base.h>
 
 
+
 class panel_hierarchy_browser : public panel_hierarchy_browser_base
 {
 public :
@@ -30,6 +31,11 @@ public :
 protected:
 
 	virtual void OnUpdateUI( wxUpdateUIEvent& event ) override;
+	
+    virtual void OnTreeItemActivated( wxTreeEvent& event ) override;
+
+	virtual void OnTreeSelChanged( wxTreeEvent& event ) override;
+	
 
 //    void OnNotebookPageChanged( wxNotebookEvent& event ) override;
 //
@@ -39,6 +45,8 @@ protected:
 
 private :
 
+    void switch_visible_sheet();
+    
 	void setFontSubChilds(wxWindowListNode* childNode, wxFont &wxf);
 
 	void getSubChilds(std::vector<wxWindow*> & wlist, unsigned int &count);
@@ -55,6 +63,8 @@ private :
     int             	m_nbsheets;
 
     SCH_SHEET*   		m_rootSheet;
+
+
 };
 
 #endif /* EESCHEMA_WIDGETS_PANEL_HIERARCHY_BROWSER_H_ */
