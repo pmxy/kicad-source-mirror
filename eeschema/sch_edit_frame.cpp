@@ -841,11 +841,10 @@ void SCH_EDIT_FRAME::OnModify()
 // Refresh necessary everytime ? pmx-2021.06.18
     GetCanvas()->Refresh();
 
-    if (update_hierarchies)
+    if (update_hierarchies) {
         UpdateHierarchyNavigator();
-
-    if( !GetTitle().StartsWith( "*" ) )
         UpdateTitle();
+    }   
 
 }
 
