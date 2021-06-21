@@ -5,6 +5,7 @@
  *      Author: pmx
  */
 
+
 #include <wx/log.h>
 #include <wx/filename.h>
 #include <tool/tool_manager.h>
@@ -51,7 +52,12 @@ void panel_hierarchy_browser::switch_visible_sheet() {
     m_SchFrameEditor->GetScreen()->m_LastZoomLevel =
                 m_SchFrameEditor->GetCanvas()->GetView()->GetScale();
 
-    wxTreeItemId  itemSel = m_hierarchyTree->GetSelection();
+/*
+ * GetSelection() only works with the controls without wxTR_MULTIPLE style, use GetSelections() [plural form...]
+ * for the controls which do have this style or, if a single item is wanted, use GetFocusedItem().
+ *
+ */
+    wxTreeItemId  itemSel = m_hierarchyTree->GetFocusedItem();
     TreeItemData* itemData = static_cast<TreeItemData*>( m_hierarchyTree->GetItemData( itemSel ) );
 
   
@@ -82,7 +88,7 @@ void panel_hierarchy_browser::recurseHierarchy(SCH_SHEET_PATH &aList, wxTreeItem
 			m_hierarchyTree->SetItemBold( next, true );
 			m_hierarchyTree->SetItemBackgroundColour( next, wxColour(240,255,120) );
 
-            wxLogMessage("%d %s",m_nbsheets, wxString("*") + fn.GetName());
+//            wxLogMessage("%d %s",m_nbsheets, wxString("*") + fn.GetName());
 
 		} else {
             m_hierarchyTree->SetItemText (next, fn.GetName());
@@ -168,7 +174,7 @@ void panel_hierarchy_browser::rebuildHierarchy() {
 // (pmx-2021.05.26) Returns a std::vector<wxWindow *> vector, and the calling function will
 // do whaterver is needed on its elements.
 // Where can I place this in the class hierarchy (Kicad) to reuse it ???
-// cloned in class panel_component_libs_picker and class panel_hierarchy_browser
+// Cloned in class panel_component_libs_picker and class panel_hierarchy_browser
 static void recurseSubWins(std::vector<wxWindow*> & wlist, wxWindowListNode *childNode, unsigned int &count) {
 	while (childNode)
 	{
