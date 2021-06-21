@@ -139,26 +139,28 @@ void SYMBOL_EDIT_FRAME::updateTitle()
 
     if( IsSymbolFromSchematic() )
     {
-        title = ( GetScreen() && GetScreen()->IsContentModified() ? "*" : "" )
-                + m_reference + " "
-                + _( "[from schematic]" )
-                + wxT( " \u2014 " );
+        if( GetScreen() && GetScreen()->IsContentModified() )
+            title = wxT( "*" );
+
+        title += m_reference;
+        title += wxS( " " ) + _( "[from schematic]" );
+    }
+    else if( GetCurSymbol() )
+    {
+        if( GetScreen() && GetScreen()->IsContentModified() )
+            title = wxT( "*" );
+
+        title += FROM_UTF8( GetCurSymbol()->GetLibId().Format().c_str() );
+
+        if( m_libMgr && m_libMgr->IsLibraryReadOnly( GetCurLib() ) )
+            title += wxS( " " ) + _( "[Read Only Library]" );
     }
     else
     {
-        if( GetCurSymbol() )
-        {
-            bool readOnly = m_libMgr && m_libMgr->IsLibraryReadOnly( GetCurLib() );
-
-            title = ( GetScreen() && GetScreen()->IsContentModified() ? "*" : "" )
-                    + FROM_UTF8( GetCurSymbol()->GetLibId().Format().c_str() )
-                    + " "
-                    + ( readOnly ? _( "[Read Only Library]" ) + wxT( " " ) : "" )
-                    + wxT( " \u2014 " );
-        }
+        title = _( "[no symbol loaded]" );
     }
 
-    title += _( "Symbol Editor" );
+    title += wxT( " \u2014 " ) + _( "Symbol Editor" );
     SetTitle( title );
 }
 
@@ -283,8 +285,9 @@ bool SYMBOL_EDIT_FRAME::LoadSymbolFromCurrentLib( const wxString& aAliasName, in
     {
         wxString msg;
 
-        msg.Printf( _( "Error occurred loading symbol \"%s\" from library \"%s\"." ),
-                    aAliasName, GetCurLib() );
+        msg.Printf( _( "Error occurred loading symbol %s from library '%s'." ),
+                    aAliasName,
+                    GetCurLib() );
         DisplayErrorMessage( this, msg, ioe.What() );
         return false;
     }
@@ -738,7 +741,7 @@ void SYMBOL_EDIT_FRAME::DeleteSymbolFromLibrary()
     {
         wxString msg;
 
-        msg.Printf( _( "The symbol \"%s\" is used to derive other symbols.\n"
+        msg.Printf( _( "The symbol %s is used to derive other symbols.\n"
                        "Deleting this symbol will delete all of the symbols derived from it.\n\n"
                        "Do you wish to delete this symbol and all of it's derivatives?" ),
                     libId.GetLibItemName().wx_str() );
@@ -955,7 +958,9 @@ void SYMBOL_EDIT_FRAME::LoadSymbol( const wxString& aAlias, const wxString& aLib
     {
         wxString msg;
 
-        msg.Printf( _( "Symbol name \"%s\" not found in library \"%s\"" ), aAlias, aLibrary );
+        msg.Printf( _( "Symbol %s not found in library '%s'." ),
+                    aAlias,
+                    aLibrary );
         DisplayError( this, msg );
         return;
     }
@@ -1040,9 +1045,9 @@ bool SYMBOL_EDIT_FRAME::saveLibrary( const wxString& aLibrary, bool aNewFile )
 
     if( !m_libMgr->SaveLibrary( aLibrary, fn.GetFullPath(), fileType ) )
     {
-        msg.Printf( _( "Failed to save changes to symbol library file \"%s\"" ),
+        msg.Printf( _( "Failed to save changes to symbol library file '%s'." ),
                     fn.GetFullPath() );
-        DisplayErrorMessage( this, _( "Error saving library" ), msg );
+        DisplayErrorMessage( this, _( "Error Saving Library" ), msg );
         return false;
     }
 
@@ -1085,7 +1090,7 @@ bool SYMBOL_EDIT_FRAME::saveLibrary( const wxString& aLibrary, bool aNewFile )
     }
 
     ClearMsgPanel();
-    msg.Printf( _( "Symbol library file \"%s\" saved" ), fn.GetFullPath() );
+    msg.Printf( _( "Symbol library file '%s' saved." ), fn.GetFullPath() );
     RebuildSymbolUnitsList();
 
     return true;
@@ -1112,7 +1117,7 @@ bool SYMBOL_EDIT_FRAME::saveAllLibraries( bool aRequireConfirmation )
         {
             if( aRequireConfirmation && !applyToAll )
             {
-                msg.Printf( _( "Save changes to \"%s\" before closing?" ), libNickname );
+                msg.Printf( _( "Save changes to '%s' before closing?" ), libNickname );
 
                 switch( UnsavedChangesDialog( this, msg, dirtyCount > 1 ? &applyToAll : nullptr ) )
                 {

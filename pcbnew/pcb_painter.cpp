@@ -1014,7 +1014,8 @@ void PCB_PAINTER::draw( const PAD* aPad, int aLayer )
         std::shared_ptr<SHAPE_COMPOUND> shapes;
         bool                            simpleShapes = true;
 
-        if( margin.x != margin.y && aPad->GetShape() != PAD_SHAPE::CUSTOM )
+        if( ( margin.x != margin.y && aPad->GetShape() != PAD_SHAPE::CUSTOM )
+            || ( aPad->GetShape() == PAD_SHAPE::ROUNDRECT && ( margin.x < 0 || margin.y < 0 ) ) )
         {
             // Our algorithms below (polygon inflation in particular) can't handle differential
             // inflation along separate axes.  So for those cases we build a dummy pad instead,
@@ -1026,7 +1027,18 @@ void PCB_PAINTER::draw( const PAD* aPad, int aLayer )
                 return;
 
             dummyPad.reset( static_cast<PAD*>( aPad->Duplicate() ) );
+            int initial_radius = dummyPad->GetRoundRectCornerRadius();
+
             dummyPad->SetSize( pad_size + margin + margin );
+
+            if( dummyPad->GetShape() == PAD_SHAPE::ROUNDRECT )
+            {
+                // To keep the right margin around the corners, we need to modify the corner radius.
+                // We must have only one radius correction, so use the smallest absolute margin.
+                int radius_margin = std::max( margin.x, margin.y );     // radius_margin is < 0
+                dummyPad->SetRoundRectCornerRadius( std::max( initial_radius + radius_margin, 0 ) );
+            }
+
             shapes = std::dynamic_pointer_cast<SHAPE_COMPOUND>( dummyPad->GetEffectiveShape() );
             margin.x = margin.y = 0;
         }
@@ -1099,16 +1111,9 @@ void PCB_PAINTER::draw( const PAD* aPad, int aLayer )
                     VECTOR2I          pos = r->GetPosition();
                     VECTOR2I          effectiveMargin = margin;
 
-                    // This is a bit of an encapsulation leak, but fixing it would be a lot of
-                    // work.  We don't want to apply margins to the "internal" rectangle of a
-                    // rounded rect.  Only the 4 segments that form the edges get the margin.
-                    if( aPad->GetShape() == PAD_SHAPE::ROUNDRECT )
-                        effectiveMargin = { 0, 0 };
-
                     if( effectiveMargin.x < 0 )
                     {
                         // A negative margin just produces a smaller rect.
-
                         VECTOR2I effectiveSize = r->GetSize() + effectiveMargin;
 
                         if( effectiveSize.x > 0 && effectiveSize.y > 0 )
@@ -1144,7 +1149,24 @@ void PCB_PAINTER::draw( const PAD* aPad, int aLayer )
                 case SH_SIMPLE:
                 {
                     const SHAPE_SIMPLE* poly = static_cast<const SHAPE_SIMPLE*>( shape );
-                    m_gal->DrawPolygon( poly->Vertices() );
+
+                    if( margin.x < 0 )  // The poly shape must be deflated
+                    {
+                        int maxError = bds.m_MaxError;
+                        int numSegs = GetArcToSegmentCount( -margin.x, maxError, 360.0 );
+                        SHAPE_POLY_SET outline;
+                        outline.NewOutline();
+
+                        for( int ii = 0; ii < poly->PointCount(); ++ii )
+                            outline.Append( poly->CPoint( ii ) );
+
+                        outline.Deflate( -margin.x, numSegs );
+
+                        m_gal->DrawPolygon( outline );
+                    }
+
+                    else
+                        m_gal->DrawPolygon( poly->Vertices() );
 
                     // Now add on a rounded margin (using segments) if the margin > 0
                     if( margin.x > 0 )

@@ -597,14 +597,14 @@ void SCH_SEXPR_PARSER::parseFill( FILL_PARAMS& aFill )
 }
 
 
-void SCH_SEXPR_PARSER::parseEDA_TEXT( EDA_TEXT* aText )
+void SCH_SEXPR_PARSER::parseEDA_TEXT( EDA_TEXT* aText, bool aConvertOverbarSyntax )
 {
     wxCHECK_RET( aText && CurTok() == T_effects,
                  wxT( "Cannot parse " ) + GetTokenString( CurTok() ) + wxT( " as EDA_TEXT." ) );
 
-    // In version 20210606 the notation for overbars was changed from `~...~` to `~{...}`. We need to convert
-    // the old syntax to the new one.
-    if( m_requiredVersion < 20210606 )
+    // In version 20210606 the notation for overbars was changed from `~...~` to `~{...}`.
+    // We need to convert the old syntax to the new one.
+    if( aConvertOverbarSyntax && m_requiredVersion < 20210606 )
         aText->SetText( ConvertToNewOverbarNotation( aText->GetText() ) );
 
     T token;
@@ -827,7 +827,7 @@ LIB_FIELD* SCH_SEXPR_PARSER::parseProperty( std::unique_ptr<LIB_SYMBOL>& aSymbol
             break;
 
         case T_effects:
-            parseEDA_TEXT( static_cast<EDA_TEXT*>( field.get() ) );
+            parseEDA_TEXT( static_cast<EDA_TEXT*>( field.get() ), field->GetId() == VALUE_FIELD );
             break;
 
         default:
@@ -1286,7 +1286,11 @@ LIB_PIN* SCH_SEXPR_PARSER::parsePin()
                 THROW_IO_ERROR( error );
             }
 
-            pin->SetName( FromUTF8() );
+            if( m_requiredVersion < 20210606 )
+                pin->SetName( ConvertToNewOverbarNotation( FromUTF8() ) );
+            else
+                pin->SetName( FromUTF8() );
+
             token = NextTok();
 
             if( token != T_RIGHT )
@@ -1299,7 +1303,7 @@ LIB_PIN* SCH_SEXPR_PARSER::parsePin()
                     // so duplicate parsing is not required.
                     EDA_TEXT text;
 
-                    parseEDA_TEXT( &text );
+                    parseEDA_TEXT( &text, true );
                     pin->SetNameTextSize( text.GetTextHeight() );
                     NeedRIGHT();
                 }
@@ -1334,7 +1338,7 @@ LIB_PIN* SCH_SEXPR_PARSER::parsePin()
                     // so duplicate parsing is not required.
                     EDA_TEXT text;
 
-                    parseEDA_TEXT( &text );
+                    parseEDA_TEXT( &text, false );
                     pin->SetNumberTextSize( text.GetTextHeight() );
                     NeedRIGHT();
                 }
@@ -1543,7 +1547,7 @@ LIB_TEXT* SCH_SEXPR_PARSER::parseText()
             break;
 
         case T_effects:
-            parseEDA_TEXT( static_cast<EDA_TEXT*>( text.get() ) );
+            parseEDA_TEXT( static_cast<EDA_TEXT*>( text.get() ), true );
             break;
 
         default:
@@ -1780,7 +1784,7 @@ SCH_FIELD* SCH_SEXPR_PARSER::parseSchField( SCH_ITEM* aParent )
             break;
 
         case T_effects:
-            parseEDA_TEXT( static_cast<EDA_TEXT*>( field.get() ) );
+            parseEDA_TEXT( static_cast<EDA_TEXT*>( field.get() ), field->GetId() == VALUE_FIELD );
             break;
 
         default:
@@ -1867,7 +1871,7 @@ SCH_SHEET_PIN* SCH_SEXPR_PARSER::parseSchSheetPin( SCH_SHEET* aSheet )
         }
 
         case T_effects:
-            parseEDA_TEXT( static_cast<EDA_TEXT*>( sheetPin.get() ) );
+            parseEDA_TEXT( static_cast<EDA_TEXT*>( sheetPin.get() ), true );
             break;
 
         case T_uuid:
@@ -2938,7 +2942,7 @@ SCH_TEXT* SCH_SEXPR_PARSER::parseSchText()
             break;
 
         case T_effects:
-            parseEDA_TEXT( static_cast<EDA_TEXT*>( text.get() ) );
+            parseEDA_TEXT( static_cast<EDA_TEXT*>( text.get() ), true );
 
             // Spin style is defined differently for graphical text (#SCH_TEXT) objects.
             if( text->Type() == SCH_TEXT_T )
@@ -3009,10 +3013,19 @@ void SCH_SEXPR_PARSER::parseBusAlias( SCH_SCREEN* aScreen )
     wxCHECK( aScreen, /* void */ );
 
     T token;
-    auto busAlias = std::make_shared<BUS_ALIAS>( aScreen );
+    std::shared_ptr<BUS_ALIAS> busAlias = std::make_shared<BUS_ALIAS>( aScreen );
+    wxString alias;
+    wxString member;
 
     NeedSYMBOL();
-    busAlias->SetName( FromUTF8() );
+
+    alias = FromUTF8();
+
+    if( m_requiredVersion < 20210621 )
+        alias = ConvertToNewOverbarNotation( alias );
+
+    busAlias->SetName( alias );
+
     NeedLEFT();
     token = NextTok();
 
@@ -3026,7 +3039,13 @@ void SCH_SEXPR_PARSER::parseBusAlias( SCH_SCREEN* aScreen )
         if( !IsSymbol( token ) )
             Expecting( "quoted string" );
 
-        busAlias->AddMember( FromUTF8() );
+        member = FromUTF8();
+
+        if( m_requiredVersion < 20210621 )
+            member = ConvertToNewOverbarNotation( member );
+
+        busAlias->AddMember( member );
+
         token = NextTok();
     }
 

@@ -124,7 +124,7 @@ PICKED_SYMBOL SCH_BASE_FRAME::PickSymbolFromLibTree( const SCHLIB_FILTER* aFilte
 
     for( const PICKED_SYMBOL& i : aHistoryList )
     {
-        LIB_SYMBOL* symbol = GetLibPart( i.LibId );
+        LIB_SYMBOL* symbol = GetLibSymbol( i.LibId );
 
         // This can be null, for example when a symbol has been deleted from a library
         if( symbol )
@@ -197,7 +197,7 @@ PICKED_SYMBOL SCH_BASE_FRAME::PickSymbolFromLibTree( const SCHLIB_FILTER* aFilte
 
 void SCH_EDIT_FRAME::SelectUnit( SCH_SYMBOL* aSymbol, int aUnit )
 {
-    LIB_SYMBOL* symbol = GetLibPart( aSymbol->GetLibId() );
+    LIB_SYMBOL* symbol = GetLibSymbol( aSymbol->GetLibId() );
 
     if( !symbol )
         return;
@@ -245,8 +245,9 @@ void SCH_EDIT_FRAME::ConvertPart( SCH_SYMBOL* aSymbol )
     {
         LIB_ID id = aSymbol->GetLibSymbolRef()->GetLibId();
 
-        msg.Printf( _( "No alternate body style found for symbol \"%s\" in library \"%s\"." ),
-                    id.GetLibItemName().wx_str(), id.GetLibNickname().wx_str() );
+        msg.Printf( _( "No alternate body style found for symbol '%s' in library '%s'." ),
+                    id.GetLibItemName().wx_str(),
+                    id.GetLibNickname().wx_str() );
         DisplayError( this,  msg );
         return;
     }
