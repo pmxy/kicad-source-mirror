@@ -22,9 +22,10 @@ panel_component_libs_picker::panel_component_libs_picker( wxWindow* aParent ) : 
 		w->	SetFont( wxf );
 	}
 
+	
     m_componentSearch->SetHint(_("Component Name"));
     m_libSearch      ->SetHint(_("Library Name"));
-    m_parameterSearch->SetHint(_("Parameter Name"));
+    //m_parametersSearch->SetHint(_("Parameter Name"));
 
 
 }
@@ -60,10 +61,10 @@ void panel_component_libs_picker::getSubChilds(std::vector<wxWindow*> & wlist, u
 	recurseSubWins(wlist, childNode, count);
 }
 
-void panel_component_libs_picker::OnUpdateUI( wxUpdateUIEvent& event ) {
-	event.Skip();
+// void panel_component_libs_picker::OnUpdateUI( wxUpdateUIEvent& event ) {
+// 	event.Skip();
 
-}
+// }
 
 
 void panel_component_libs_picker::OnNotebookPageChanged( wxNotebookEvent& event ) {

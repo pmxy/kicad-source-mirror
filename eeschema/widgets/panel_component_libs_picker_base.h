@@ -26,8 +26,8 @@
 #include <wx/icon.h>
 #include <wx/button.h>
 #include <wx/panel.h>
-#include <wx/collpane.h>
 #include <wx/stattext.h>
+#include <wx/collpane.h>
 #include <wx/splitter.h>
 #include <wx/notebook.h>
 
@@ -56,21 +56,20 @@ class panel_component_libs_picker_base : public wxPanel
 		wxButton* m_button1;
 		wxButton* m_button2;
 		wxPanel* m_panel5;
-		wxCollapsiblePane* m_collapsiblePane4;
-		wxSearchCtrl* m_parameterSearch;
+		wxCollapsiblePane* m_collapsibleParameters;
+		wxSearchCtrl* m_parametersSearch;
+		wxStaticText* m_parameterText;
 		wxDataViewListCtrl* m_parametersList;
-		wxDataViewColumn* m_dataViewListColumn4;
-		wxDataViewColumn* m_dataViewListColumn5;
-		wxCollapsiblePane* m_collapsiblePane5;
-		wxStaticText* m_staticText1;
-		wxCollapsiblePane* m_collapsiblePane1;
-		wxStaticText* m_staticText2;
+		wxDataViewColumn* m_ParmetersListParam;
+		wxDataViewColumn* m_ParametersListValue;
+		wxDataViewColumn* m_parametersListComment;
 		wxPanel* m_panel10;
 
 		// Virtual event handlers, overide them in your derived class
+		virtual void OnInitDialog( wxInitDialogEvent& event ) { event.Skip(); }
 		virtual void OnSetFocus( wxFocusEvent& event ) { event.Skip(); }
-		virtual void OnUpdateUI( wxUpdateUIEvent& event ) { event.Skip(); }
 		virtual void OnNotebookPageChanged( wxNotebookEvent& event ) { event.Skip(); }
+		virtual void OnCollapsiblePaneChanged( wxCollapsiblePaneEvent& event ) { event.Skip(); }
 
 
 	public:

@@ -124,10 +124,10 @@ panel_component_libs_picker_base::panel_component_libs_picker_base( wxWindow* pa
 	fgSizer1->Add( m_button2, 1, wxALIGN_CENTER_VERTICAL|wxALL|wxSHAPED, 5 );
 
 
-	fgSizer1->Add( 0, 0, 1, wxEXPAND, 5 );
-
-
 	bSizer10->Add( fgSizer1, 1, wxEXPAND, 5 );
+
+
+	bSizer10->Add( 0, 0, 1, wxEXPAND, 5 );
 
 
 	bSizer16->Add( bSizer10, 0, wxEXPAND, 5 );
@@ -140,90 +140,54 @@ panel_component_libs_picker_base::panel_component_libs_picker_base( wxWindow* pa
 	m_panel5->SetFont( wxFont( 9, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false, wxEmptyString ) );
 	m_panel5->SetBackgroundColour( wxSystemSettings::GetColour( wxSYS_COLOUR_BTNFACE ) );
 
+	wxBoxSizer* bSizer7;
+	bSizer7 = new wxBoxSizer( wxVERTICAL );
+
+	m_collapsibleParameters = new wxCollapsiblePane( m_panel5, wxID_ANY, _("Parameters"), wxDefaultPosition, wxDefaultSize, wxCP_DEFAULT_STYLE|wxCP_NO_TLW_RESIZE|wxBORDER_DEFAULT );
+	m_collapsibleParameters->Collapse( false );
+
 	wxBoxSizer* bSizer8;
 	bSizer8 = new wxBoxSizer( wxVERTICAL );
 
-	m_collapsiblePane4 = new wxCollapsiblePane( m_panel5, wxID_ANY, _("Component Parameters"), wxDefaultPosition, wxDefaultSize, wxCP_DEFAULT_STYLE|wxBORDER_DEFAULT );
-	m_collapsiblePane4->Collapse( true );
-
-	m_collapsiblePane4->SetFont( wxFont( 9, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false, wxEmptyString ) );
-	m_collapsiblePane4->SetBackgroundColour( wxSystemSettings::GetColour( wxSYS_COLOUR_BTNFACE ) );
-
-	wxBoxSizer* bSizer6;
-	bSizer6 = new wxBoxSizer( wxVERTICAL );
-
-	m_parameterSearch = new wxSearchCtrl( m_collapsiblePane4->GetPane(), wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0|wxBORDER_DEFAULT );
+	m_parametersSearch = new wxSearchCtrl( m_collapsibleParameters->GetPane(), wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_LEFT|wxBORDER_DEFAULT );
 	#ifndef __WXMAC__
-	m_parameterSearch->ShowSearchButton( true );
+	m_parametersSearch->ShowSearchButton( true );
 	#endif
-	m_parameterSearch->ShowCancelButton( true );
-	bSizer6->Add( m_parameterSearch, 0, wxALL|wxEXPAND, 5 );
+	m_parametersSearch->ShowCancelButton( true );
+	m_parametersSearch->SetFont( wxFont( 9, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false, wxEmptyString ) );
 
-	m_parametersList = new wxDataViewListCtrl( m_collapsiblePane4->GetPane(), wxID_ANY, wxDefaultPosition, wxSize( -1,-1 ), wxDV_HORIZ_RULES|wxDV_VERT_RULES|wxBORDER_DEFAULT );
+	bSizer8->Add( m_parametersSearch, 0, wxALL|wxEXPAND, 5 );
+
+	m_parameterText = new wxStaticText( m_collapsibleParameters->GetPane(), wxID_ANY, _("The found Parameter"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_parameterText->Wrap( -1 );
+	bSizer8->Add( m_parameterText, 0, wxALL, 5 );
+
+	m_parametersList = new wxDataViewListCtrl( m_collapsibleParameters->GetPane(), wxID_ANY, wxDefaultPosition, wxSize( -1,-1 ), wxDV_HORIZ_RULES|wxDV_VERT_RULES|wxBORDER_DEFAULT );
 	m_parametersList->SetFont( wxFont( 9, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false, wxEmptyString ) );
-	m_parametersList->SetMinSize( wxSize( -1,100 ) );
+	m_parametersList->SetBackgroundColour( wxSystemSettings::GetColour( wxSYS_COLOUR_WINDOW ) );
+	m_parametersList->SetMinSize( wxSize( 100,100 ) );
 
-	m_dataViewListColumn4 = m_parametersList->AppendTextColumn( _("Parameter"), wxDATAVIEW_CELL_INERT, -1, static_cast<wxAlignment>(wxALIGN_CENTER_VERTICAL|wxALIGN_LEFT|wxALIGN_RIGHT), wxDATAVIEW_COL_REORDERABLE|wxDATAVIEW_COL_RESIZABLE|wxDATAVIEW_COL_SORTABLE );
-	m_dataViewListColumn4->GetRenderer()->EnableEllipsize( wxELLIPSIZE_END );
-	m_dataViewListColumn5 = m_parametersList->AppendTextColumn( _("Value"), wxDATAVIEW_CELL_INERT, -1, static_cast<wxAlignment>(wxALIGN_CENTER_VERTICAL|wxALIGN_LEFT|wxALIGN_RIGHT), wxDATAVIEW_COL_REORDERABLE|wxDATAVIEW_COL_RESIZABLE|wxDATAVIEW_COL_SORTABLE );
-	m_dataViewListColumn5->GetRenderer()->EnableEllipsize( wxELLIPSIZE_END );
-	bSizer6->Add( m_parametersList, 1, wxALL|wxEXPAND, 5 );
-
-
-	m_collapsiblePane4->GetPane()->SetSizer( bSizer6 );
-	m_collapsiblePane4->GetPane()->Layout();
-	bSizer6->Fit( m_collapsiblePane4->GetPane() );
-	bSizer8->Add( m_collapsiblePane4, 0, wxALL|wxEXPAND, 5 );
-
-	m_collapsiblePane5 = new wxCollapsiblePane( m_panel5, wxID_ANY, _("Box 1"), wxDefaultPosition, wxDefaultSize, wxCP_DEFAULT_STYLE|wxBORDER_DEFAULT );
-	m_collapsiblePane5->Collapse( true );
-
-	m_collapsiblePane5->SetFont( wxFont( 9, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false, wxEmptyString ) );
-	m_collapsiblePane5->SetBackgroundColour( wxSystemSettings::GetColour( wxSYS_COLOUR_BTNFACE ) );
-
-	wxBoxSizer* bSizer101;
-	bSizer101 = new wxBoxSizer( wxVERTICAL );
-
-	m_staticText1 = new wxStaticText( m_collapsiblePane5->GetPane(), wxID_ANY, _("Text"), wxDefaultPosition, wxDefaultSize, 0|wxBORDER_DEFAULT );
-	m_staticText1->Wrap( -1 );
-	m_staticText1->SetFont( wxFont( 9, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false, wxEmptyString ) );
-
-	bSizer101->Add( m_staticText1, 1, wxALL|wxEXPAND, 5 );
-
-
-	m_collapsiblePane5->GetPane()->SetSizer( bSizer101 );
-	m_collapsiblePane5->GetPane()->Layout();
-	bSizer101->Fit( m_collapsiblePane5->GetPane() );
-	bSizer8->Add( m_collapsiblePane5, 0, wxALL|wxEXPAND, 5 );
-
-	m_collapsiblePane1 = new wxCollapsiblePane( m_panel5, wxID_ANY, _("Box 2"), wxDefaultPosition, wxDefaultSize, wxCP_DEFAULT_STYLE|wxBORDER_DEFAULT );
-	m_collapsiblePane1->Collapse( true );
-
-	m_collapsiblePane1->SetFont( wxFont( 9, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false, wxEmptyString ) );
-	m_collapsiblePane1->SetBackgroundColour( wxSystemSettings::GetColour( wxSYS_COLOUR_BTNFACE ) );
-
-	wxBoxSizer* bSizer11;
-	bSizer11 = new wxBoxSizer( wxVERTICAL );
-
-	m_staticText2 = new wxStaticText( m_collapsiblePane1->GetPane(), wxID_ANY, _("Text"), wxDefaultPosition, wxDefaultSize, 0|wxBORDER_DEFAULT );
-	m_staticText2->Wrap( -1 );
-	m_staticText2->SetFont( wxFont( 9, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false, wxEmptyString ) );
-
-	bSizer11->Add( m_staticText2, 1, wxALL|wxEXPAND, 5 );
-
-
-	m_collapsiblePane1->GetPane()->SetSizer( bSizer11 );
-	m_collapsiblePane1->GetPane()->Layout();
-	bSizer11->Fit( m_collapsiblePane1->GetPane() );
-	bSizer8->Add( m_collapsiblePane1, 0, wxALL|wxEXPAND, 5 );
+	m_ParmetersListParam = m_parametersList->AppendTextColumn( _("Param"), wxDATAVIEW_CELL_INERT, -1, static_cast<wxAlignment>(wxALIGN_CENTER_VERTICAL|wxALIGN_LEFT|wxALIGN_RIGHT), wxDATAVIEW_COL_REORDERABLE|wxDATAVIEW_COL_RESIZABLE|wxDATAVIEW_COL_SORTABLE );
+	m_ParmetersListParam->GetRenderer()->EnableEllipsize( wxELLIPSIZE_END );
+	m_ParametersListValue = m_parametersList->AppendTextColumn( _("Value"), wxDATAVIEW_CELL_INERT, -1, static_cast<wxAlignment>(wxALIGN_CENTER_VERTICAL|wxALIGN_LEFT|wxALIGN_RIGHT), wxDATAVIEW_COL_REORDERABLE|wxDATAVIEW_COL_RESIZABLE|wxDATAVIEW_COL_SORTABLE );
+	m_ParametersListValue->GetRenderer()->EnableEllipsize( wxELLIPSIZE_END );
+	m_parametersListComment = m_parametersList->AppendIconTextColumn( _("Comment"), wxDATAVIEW_CELL_INERT, -1, static_cast<wxAlignment>(wxALIGN_CENTER_VERTICAL|wxALIGN_LEFT|wxALIGN_RIGHT), wxDATAVIEW_COL_REORDERABLE|wxDATAVIEW_COL_RESIZABLE|wxDATAVIEW_COL_SORTABLE );
+	m_parametersListComment->GetRenderer()->EnableEllipsize( wxELLIPSIZE_END );
+	bSizer8->Add( m_parametersList, 1, wxALL|wxEXPAND, 5 );
 
 
 	bSizer8->Add( 0, 0, 1, wxEXPAND, 5 );
 
 
-	m_panel5->SetSizer( bSizer8 );
+	m_collapsibleParameters->GetPane()->SetSizer( bSizer8 );
+	m_collapsibleParameters->GetPane()->Layout();
+	bSizer8->Fit( m_collapsibleParameters->GetPane() );
+	bSizer7->Add( m_collapsibleParameters, 1, wxALL|wxEXPAND, 5 );
+
+
+	m_panel5->SetSizer( bSizer7 );
 	m_panel5->Layout();
-	bSizer8->Fit( m_panel5 );
+	bSizer7->Fit( m_panel5 );
 	m_splitter2->SplitHorizontally( m_panel7, m_panel5, 350 );
 	bSizer23->Add( m_splitter2, 1, wxEXPAND, 5 );
 
@@ -236,13 +200,16 @@ panel_component_libs_picker_base::panel_component_libs_picker_base( wxWindow* pa
 	m_panel10->SetFont( wxFont( 9, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false, wxEmptyString ) );
 	m_panel10->SetBackgroundColour( wxSystemSettings::GetColour( wxSYS_COLOUR_BTNFACE ) );
 
-	wxBoxSizer* bSizer21;
-	bSizer21 = new wxBoxSizer( wxVERTICAL );
+	wxBoxSizer* bSizer11;
+	bSizer11 = new wxBoxSizer( wxVERTICAL );
 
 
-	m_panel10->SetSizer( bSizer21 );
+	bSizer11->Add( 0, 0, 1, wxEXPAND, 5 );
+
+
+	m_panel10->SetSizer( bSizer11 );
 	m_panel10->Layout();
-	bSizer21->Fit( m_panel10 );
+	bSizer11->Fit( m_panel10 );
 	m_browserNoteBook->AddPage( m_panel10, _("Details"), false );
 
 	bSizer13->Add( m_browserNoteBook, 1, wxALL|wxEXPAND, 5 );
@@ -252,18 +219,20 @@ panel_component_libs_picker_base::panel_component_libs_picker_base( wxWindow* pa
 	this->Layout();
 
 	// Connect Events
+	this->Connect( wxEVT_INIT_DIALOG, wxInitDialogEventHandler( panel_component_libs_picker_base::OnInitDialog ) );
 	this->Connect( wxEVT_SET_FOCUS, wxFocusEventHandler( panel_component_libs_picker_base::OnSetFocus ) );
-	this->Connect( wxEVT_UPDATE_UI, wxUpdateUIEventHandler( panel_component_libs_picker_base::OnUpdateUI ) );
 	m_browserNoteBook->Connect( wxEVT_COMMAND_NOTEBOOK_PAGE_CHANGED, wxNotebookEventHandler( panel_component_libs_picker_base::OnNotebookPageChanged ), NULL, this );
 	m_browserNoteBook->Connect( wxEVT_SET_FOCUS, wxFocusEventHandler( panel_component_libs_picker_base::OnSetFocus ), NULL, this );
+	m_collapsibleParameters->Connect( wxEVT_COLLAPSIBLEPANE_CHANGED, wxCollapsiblePaneEventHandler( panel_component_libs_picker_base::OnCollapsiblePaneChanged ), NULL, this );
 }
 
 panel_component_libs_picker_base::~panel_component_libs_picker_base()
 {
 	// Disconnect Events
+	this->Disconnect( wxEVT_INIT_DIALOG, wxInitDialogEventHandler( panel_component_libs_picker_base::OnInitDialog ) );
 	this->Disconnect( wxEVT_SET_FOCUS, wxFocusEventHandler( panel_component_libs_picker_base::OnSetFocus ) );
-	this->Disconnect( wxEVT_UPDATE_UI, wxUpdateUIEventHandler( panel_component_libs_picker_base::OnUpdateUI ) );
 	m_browserNoteBook->Disconnect( wxEVT_COMMAND_NOTEBOOK_PAGE_CHANGED, wxNotebookEventHandler( panel_component_libs_picker_base::OnNotebookPageChanged ), NULL, this );
 	m_browserNoteBook->Disconnect( wxEVT_SET_FOCUS, wxFocusEventHandler( panel_component_libs_picker_base::OnSetFocus ), NULL, this );
+	m_collapsibleParameters->Disconnect( wxEVT_COLLAPSIBLEPANE_CHANGED, wxCollapsiblePaneEventHandler( panel_component_libs_picker_base::OnCollapsiblePaneChanged ), NULL, this );
 
 }

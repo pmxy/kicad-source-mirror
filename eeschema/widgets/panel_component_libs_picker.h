@@ -23,7 +23,7 @@ public :
 
 protected:
 
-	virtual void OnUpdateUI( wxUpdateUIEvent& event ) override;
+  //	virtual void OnUpdateUI( wxUpdateUIEvent& event ) override;
 
 	virtual void OnNotebookPageChanged( wxNotebookEvent& event ) override;
 
