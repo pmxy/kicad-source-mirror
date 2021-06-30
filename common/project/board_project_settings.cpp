@@ -28,8 +28,7 @@ PARAM_LAYER_PRESET::PARAM_LAYER_PRESET( const std::string& aPath,
                                         std::vector<LAYER_PRESET>* aPresetList ) :
         PARAM_LAMBDA<nlohmann::json>( aPath,
                                       std::bind( &PARAM_LAYER_PRESET::presetsToJson, this ),
-                                      std::bind( &PARAM_LAYER_PRESET::jsonToPresets, this, _1 ),
-                                      {} ),
+                                      std::bind( &PARAM_LAYER_PRESET::jsonToPresets, this, std::placeholders::_1 ), {} ),
         m_presets( aPresetList )
 {
     wxASSERT( aPresetList );

@@ -174,7 +174,7 @@ void FILE_HISTORY::ClearFileHistory()
 
 SELECTION_CONDITION FILE_HISTORY::FileHistoryNotEmpty( const FILE_HISTORY& aHistory )
 {
-    return std::bind( &FILE_HISTORY::isHistoryNotEmpty, _1, std::cref( aHistory ) );
+  return std::bind( &FILE_HISTORY::isHistoryNotEmpty, std::placeholders::_1, std::cref( aHistory ) );
 }
 
 

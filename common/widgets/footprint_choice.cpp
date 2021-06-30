@@ -49,8 +49,8 @@ void FOOTPRINT_CHOICE::DoSetPopupControl( wxComboPopup* aPopup )
     GetVListBoxComboPopup()->Bind( wxEVT_LEFT_DOWN, &FOOTPRINT_CHOICE::TryVetoMouse, this );
     GetVListBoxComboPopup()->Bind( wxEVT_LEFT_UP, &FOOTPRINT_CHOICE::TryVetoMouse, this );
     GetVListBoxComboPopup()->Bind( wxEVT_LEFT_DCLICK, &FOOTPRINT_CHOICE::TryVetoMouse, this );
-    GetVListBoxComboPopup()->Bind( wxEVT_LISTBOX, std::bind( &FOOTPRINT_CHOICE::TryVetoSelect, this, _1, true ) );
-    Bind( wxEVT_COMBOBOX, std::bind( &FOOTPRINT_CHOICE::TryVetoSelect, this, _1, false ) );
+    GetVListBoxComboPopup()->Bind( wxEVT_LISTBOX, std::bind( &FOOTPRINT_CHOICE::TryVetoSelect, this, std::placeholders::_1, true ) );
+    Bind( wxEVT_COMBOBOX, std::bind( &FOOTPRINT_CHOICE::TryVetoSelect, this, std::placeholders::_1, false ) );
 }
 
 

@@ -37,37 +37,37 @@ using namespace std::placeholders;
 
 SELECTION_CONDITION EDITOR_CONDITIONS::ContentModified()
 {
-    return std::bind( &EDITOR_CONDITIONS::contentModifiedFunc, _1, m_frame );
+  return std::bind( &EDITOR_CONDITIONS::contentModifiedFunc,  std::placeholders::_1, m_frame );
 }
 
 
 SELECTION_CONDITION EDITOR_CONDITIONS::UndoAvailable()
 {
-    return std::bind( &EDITOR_CONDITIONS::undoFunc, _1, m_frame );
+  return std::bind( &EDITOR_CONDITIONS::undoFunc,  std::placeholders::_1, m_frame );
 }
 
 
 SELECTION_CONDITION EDITOR_CONDITIONS::RedoAvailable()
 {
-    return std::bind( &EDITOR_CONDITIONS::redoFunc, _1, m_frame );
+  return std::bind( &EDITOR_CONDITIONS::redoFunc,  std::placeholders::_1, m_frame );
 }
 
 
 SELECTION_CONDITION EDITOR_CONDITIONS::Units( EDA_UNITS aUnit )
 {
-    return std::bind( &EDITOR_CONDITIONS::unitsFunc, _1, m_frame, aUnit );
+  return std::bind( &EDITOR_CONDITIONS::unitsFunc,  std::placeholders::_1, m_frame, aUnit );
 }
 
 
 SELECTION_CONDITION EDITOR_CONDITIONS::CurrentTool( const TOOL_ACTION& aTool )
 {
-    return std::bind( &EDITOR_CONDITIONS::toolFunc, _1, m_frame, std::cref( aTool ) );
+  return std::bind( &EDITOR_CONDITIONS::toolFunc,  std::placeholders::_1, m_frame, std::cref( aTool ) );
 }
 
 
 SELECTION_CONDITION EDITOR_CONDITIONS::NoActiveTool()
 {
-    return std::bind( &EDITOR_CONDITIONS::noToolFunc, _1, m_frame );
+  return std::bind( &EDITOR_CONDITIONS::noToolFunc,  std::placeholders::_1, m_frame );
 }
 
 
@@ -78,7 +78,7 @@ SELECTION_CONDITION EDITOR_CONDITIONS::GridVisible()
 
     wxASSERT( drwFrame );
 
-    return std::bind( &EDITOR_CONDITIONS::gridFunc, _1, drwFrame );
+    return std::bind( &EDITOR_CONDITIONS::gridFunc,  std::placeholders::_1, drwFrame );
 }
 
 
@@ -89,7 +89,7 @@ SELECTION_CONDITION EDITOR_CONDITIONS::PolarCoordinates()
 
     wxASSERT( drwFrame );
 
-    return std::bind( &EDITOR_CONDITIONS::polarCoordFunc, _1, drwFrame );
+    return std::bind( &EDITOR_CONDITIONS::polarCoordFunc,  std::placeholders::_1, drwFrame );
 }
 
 
@@ -100,7 +100,7 @@ SELECTION_CONDITION EDITOR_CONDITIONS::FullscreenCursor()
 
     wxASSERT( drwFrame );
 
-    return std::bind( &EDITOR_CONDITIONS::cursorFunc, _1, drwFrame );
+    return std::bind( &EDITOR_CONDITIONS::cursorFunc,  std::placeholders::_1, drwFrame );
 }
 
 

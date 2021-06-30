@@ -279,28 +279,28 @@ void ACTION_MENU::UpdateAll()
     if( m_tool )
         updateHotKeys();
 
-    runOnSubmenus( std::bind( &ACTION_MENU::UpdateAll, _1 ) );
+    runOnSubmenus( std::bind( &ACTION_MENU::UpdateAll, std::placeholders::_1 ) );
 }
 
 
 void ACTION_MENU::ClearDirty()
 {
     m_dirty = false;
-    runOnSubmenus( std::bind( &ACTION_MENU::ClearDirty, _1 ) );
+    runOnSubmenus( std::bind( &ACTION_MENU::ClearDirty, std::placeholders::_1 ) );
 }
 
 
 void ACTION_MENU::SetDirty()
 {
     m_dirty = true;
-    runOnSubmenus( std::bind( &ACTION_MENU::SetDirty, _1 ) );
+    runOnSubmenus( std::bind( &ACTION_MENU::SetDirty, std::placeholders::_1 ) );
 }
 
 
 void ACTION_MENU::SetTool( TOOL_INTERACTIVE* aTool )
 {
     m_tool = aTool;
-    runOnSubmenus( std::bind( &ACTION_MENU::SetTool, _1, aTool ) );
+    runOnSubmenus( std::bind( &ACTION_MENU::SetTool, std::placeholders::_1, aTool ) );
 }
 
 
@@ -569,7 +569,7 @@ void ACTION_MENU::runEventHandlers( const wxMenuEvent& aMenuEvent, OPT_TOOL_EVEN
     aToolEvent = eventHandler( aMenuEvent );
 
     if( !aToolEvent )
-        runOnSubmenus( std::bind( &ACTION_MENU::runEventHandlers, _1, aMenuEvent, aToolEvent ) );
+      runOnSubmenus( std::bind( &ACTION_MENU::runEventHandlers, std::placeholders::_1, aMenuEvent, aToolEvent ) );
 }
 
 

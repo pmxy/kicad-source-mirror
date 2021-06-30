@@ -58,37 +58,37 @@ bool SELECTION_CONDITIONS::IdleSelection( const SELECTION& aSelection )
 
 SELECTION_CONDITION SELECTION_CONDITIONS::HasType( KICAD_T aType )
 {
-    return std::bind( &SELECTION_CONDITIONS::hasTypeFunc, _1, aType );
+  return std::bind( &SELECTION_CONDITIONS::hasTypeFunc, std::placeholders::_1, aType );
 }
 
 
 SELECTION_CONDITION SELECTION_CONDITIONS::OnlyType( KICAD_T aType )
 {
-    return std::bind( &SELECTION_CONDITIONS::onlyTypeFunc, _1, aType );
+  return std::bind( &SELECTION_CONDITIONS::onlyTypeFunc, std::placeholders::_1, aType );
 }
 
 
 SELECTION_CONDITION SELECTION_CONDITIONS::OnlyTypes( const KICAD_T aTypes[] )
 {
-    return std::bind( &SELECTION_CONDITIONS::onlyTypesFunc, _1, aTypes );
+  return std::bind( &SELECTION_CONDITIONS::onlyTypesFunc, std::placeholders::_1, aTypes );
 }
 
 
 SELECTION_CONDITION SELECTION_CONDITIONS::Count( int aNumber )
 {
-    return std::bind( &SELECTION_CONDITIONS::countFunc, _1, aNumber );
+  return std::bind( &SELECTION_CONDITIONS::countFunc, std::placeholders::_1, aNumber );
 }
 
 
 SELECTION_CONDITION SELECTION_CONDITIONS::MoreThan( int aNumber )
 {
-    return std::bind( &SELECTION_CONDITIONS::moreThanFunc, _1, aNumber );
+  return std::bind( &SELECTION_CONDITIONS::moreThanFunc, std::placeholders::_1, aNumber );
 }
 
 
 SELECTION_CONDITION SELECTION_CONDITIONS::LessThan( int aNumber )
 {
-    return std::bind( &SELECTION_CONDITIONS::lessThanFunc, _1, aNumber );
+  return std::bind( &SELECTION_CONDITIONS::lessThanFunc, std::placeholders::_1, aNumber );
 }
 
 
@@ -157,27 +157,27 @@ bool SELECTION_CONDITIONS::lessThanFunc( const SELECTION& aSelection, int aNumbe
 SELECTION_CONDITION operator||( const SELECTION_CONDITION& aConditionA,
                                 const SELECTION_CONDITION& aConditionB )
 {
-    return std::bind( &SELECTION_CONDITIONS::orFunc, aConditionA, aConditionB, _1 );
+  return std::bind( &SELECTION_CONDITIONS::orFunc, aConditionA, aConditionB, std::placeholders::_1 );
 }
 
 
 SELECTION_CONDITION operator&&( const SELECTION_CONDITION& aConditionA,
                                 const SELECTION_CONDITION& aConditionB )
 {
-    return std::bind( &SELECTION_CONDITIONS::andFunc, aConditionA, aConditionB, _1 );
+  return std::bind( &SELECTION_CONDITIONS::andFunc, aConditionA, aConditionB, std::placeholders::_1 );
 }
 
 
 SELECTION_CONDITION operator!( const SELECTION_CONDITION& aCondition )
 {
-    return std::bind( &SELECTION_CONDITIONS::notFunc, aCondition, _1 );
+  return std::bind( &SELECTION_CONDITIONS::notFunc, aCondition, std::placeholders::_1 );
 }
 
 
 SELECTION_CONDITION operator||( const SELECTION_CONDITION& aConditionA,
                                 SELECTION_BOOL aConditionB )
 {
-    return std::bind( &SELECTION_CONDITIONS::orBoolFunc, aConditionA, std::ref( aConditionB ), _1 );
+  return std::bind( &SELECTION_CONDITIONS::orBoolFunc, aConditionA, std::ref( aConditionB ), std::placeholders::_1 );
 }
 
 SELECTION_CONDITION operator||( SELECTION_BOOL aConditionA,
@@ -190,7 +190,7 @@ SELECTION_CONDITION operator||( SELECTION_BOOL aConditionA,
 SELECTION_CONDITION operator&&( const SELECTION_CONDITION& aConditionA,
                                 SELECTION_BOOL aConditionB )
 {
-    return std::bind( &SELECTION_CONDITIONS::andBoolFunc, aConditionA, std::ref( aConditionB ), _1 );
+  return std::bind( &SELECTION_CONDITIONS::andBoolFunc, aConditionA, std::ref( aConditionB ), std::placeholders::_1 );
 }
 
 SELECTION_CONDITION operator&&( SELECTION_BOOL aConditionA,
