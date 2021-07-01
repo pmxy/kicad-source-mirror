@@ -25,7 +25,7 @@
 find_package(Boost COMPONENTS unit_test_framework REQUIRED)
 find_package( wxWidgets 3.0.0 COMPONENTS gl aui adv html core net base xml stc REQUIRED )
 
-add_definitions(-DBOOST_TEST_DYN_LINK -DPCBNEW)
+add_definitions(-DBOOST_TEST_DYN_LINK -DPCBNEW -DTEST_APP_GUI)
 
 
 add_executable( test_pns
@@ -39,7 +39,7 @@ add_executable( test_pns
     ../../pcbnew/drc/drc_test_provider_hole_size.cpp
     ../../pcbnew/drc/drc_test_provider_disallow.cpp
     ../../pcbnew/drc/drc_test_provider_track_width.cpp
-    ../../pcbnew/drc/drc_test_provider_annulus.cpp
+    ../../pcbnew/drc/drc_test_provider_annular_width.cpp
     ../../pcbnew/drc/drc_test_provider_connectivity.cpp
     ../../pcbnew/drc/drc_test_provider_courtyard_clearance.cpp
     ../../pcbnew/drc/drc_test_provider_via_diameter.cpp

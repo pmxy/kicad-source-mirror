@@ -24,7 +24,6 @@
 #include <wx/log.h>
 #include <wx/stdpaths.h>
 
-#include <config_params.h>
 #include <confirm.h>
 #include <core/arraydim.h>
 #include <fp_lib_table.h>
@@ -309,12 +308,12 @@ FP_LIB_TABLE* PROJECT::PcbFootprintLibs( KIWAY& aKiway )
         }
         catch( const IO_ERROR& ioe )
         {
-            DisplayErrorMessage( NULL, _( "Error loading project footprint library table" ),
+            DisplayErrorMessage( NULL, _( "Error loading project footprint library table." ),
                                  ioe.What() );
         }
         catch( ... )
         {
-            DisplayErrorMessage( NULL, _( "Error loading project footprint library table" ) );
+            DisplayErrorMessage( NULL, _( "Error loading project footprint library table." ) );
         }
     }
 

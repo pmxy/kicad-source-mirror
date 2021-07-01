@@ -2,7 +2,7 @@
  * This program source code file is part of KiCad, a free EDA CAD application.
  *
  * Copyright (C) 2018 CERN
- * Copyright (C) 2019-2020 KiCad Developers, see AUTHORS.txt for contributors.
+ * Copyright (C) 2019-2021 KiCad Developers, see AUTHORS.txt for contributors.
  * @author Tomasz Wlostowski <tomasz.wlostowski@cern.ch>
  *
  * This program is free software; you can redistribute it and/or
@@ -61,7 +61,7 @@ public:
      */
     SHAPE_ARC( const VECTOR2I& aArcStart, const VECTOR2I& aArcMid, const VECTOR2I& aArcEnd,
                int aWidth );
-   
+
     /**
      * SHAPE_ARC ctor.
      * Builds a SHAPE_ARC which is tangent to two segments and a given radius
@@ -144,8 +144,19 @@ public:
         return SEG( m_start, m_end );
     }
 
+    /**
+     * @return the central angle of the arc shape in degrees, normalized between 0.0, 360.0 deg
+     */
     double  GetCentralAngle() const;
+
+    /**
+     * @return the start angle of the arc shape in degrees, normalized between 0.0, 360.0 deg
+     */
     double  GetStartAngle() const;
+
+    /**
+     * @return the end angle of the arc shape in degrees, normalized between 0.0, 360.0 deg
+     */
     double  GetEndAngle() const;
 
     /**
@@ -154,16 +165,29 @@ public:
     double GetLength() const;
 
     /**
+     * @return a default accuray value for ConvertToPolyline() to build the polyline.
+     *   ** Note that the default is ARC_HIGH_DEF in PCBNew units
+     *      This is to allow common geometry collision functions
+     *      Other programs should call this using explicit accuracy values
+     *      TODO: unify KiCad internal units
+     */
+    static double DefaultAccuracyForPCB(){ return 0.005 * PCB_IU_PER_MM; }
+
+    /**
      * Constructs a SHAPE_LINE_CHAIN of segments from a given arc
      * @param aAccuracy maximum divergence from true arc given in internal units
      *   ** Note that the default is ARC_HIGH_DEF in PCBNew units
      *      This is to allow common geometry collision functions
      *      Other programs should call this using explicit accuracy values
      *      TODO: unify KiCad internal units
+     * @param aEffectiveAccuracy is the actual divergence from true arc given
+     * the approximation error is between -aEffectiveAccuracy/2 and +aEffectiveAccuracy/2
+     * in internal units
      *
      * @return a SHAPE_LINE_CHAIN
      */
-    const SHAPE_LINE_CHAIN ConvertToPolyline( double aAccuracy = 0.005 * PCB_IU_PER_MM ) const;
+    const SHAPE_LINE_CHAIN ConvertToPolyline( double aAccuracy = DefaultAccuracyForPCB(),
+                                              double* aEffectiveAccuracy = nullptr ) const;
 
 private:
     bool ccw( const VECTOR2I& aA, const VECTOR2I& aB, const VECTOR2I& aC ) const

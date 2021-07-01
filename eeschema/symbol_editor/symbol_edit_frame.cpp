@@ -72,6 +72,7 @@
 #include <wildcards_and_files_ext.h>
 #include <panel_sym_lib_table.h>
 #include <wx/choicdlg.h>
+#include <kicad_string.h>
 
 
 bool SYMBOL_EDIT_FRAME::m_showDeMorgan = false;
@@ -748,10 +749,10 @@ void SYMBOL_EDIT_FRAME::SetCurSymbol( LIB_SYMBOL* aSymbol, bool aUpdateZoom )
         wxString link;
 
         msg.Printf( _( "Symbol %s is derived from %s.  Symbol graphics will not be editable." ),
-                    symbolName,
-                    parentSymbolName );
+                    UnescapeString( symbolName ),
+                    UnescapeString( parentSymbolName ) );
 
-        link.Printf( _( "Open %s" ), parentSymbolName );
+        link.Printf( _( "Open %s" ), UnescapeString( parentSymbolName ) );
 
         wxHyperlinkCtrl* button = new wxHyperlinkCtrl( infobar, wxID_ANY, link, wxEmptyString );
         button->Bind( wxEVT_COMMAND_HYPERLINK, std::function<void( wxHyperlinkEvent& aEvent )>(
@@ -822,7 +823,7 @@ bool SYMBOL_EDIT_FRAME::AddLibraryFile( bool aCreateNew )
 
     if( m_libMgr->LibraryExists( libName ) )
     {
-        DisplayError( this, wxString::Format( _( "Library \"%s\" already exists" ), libName ) );
+        DisplayError( this, wxString::Format( _( "Library '%s' already exists." ), libName ) );
         return false;
     }
 
@@ -831,7 +832,7 @@ bool SYMBOL_EDIT_FRAME::AddLibraryFile( bool aCreateNew )
         if( !m_libMgr->CreateLibrary( fn.GetFullPath(), libTable ) )
         {
             DisplayError( this, wxString::Format( _( "Could not create the library file '%s'.\n"
-                                                     "Check write permission." ),
+                                                     "Make sure you have write permissions and try again." ),
                                                   fn.GetFullPath() ) );
             return false;
         }
@@ -910,8 +911,8 @@ void SYMBOL_EDIT_FRAME::SyncLibraries( bool aShowProgress, const wxString& aForc
         m_libMgr->Sync( aForceRefresh,
                 [&]( int progress, int max, const wxString& libName )
                 {
-                    progressDlg.Update( progress,
-                                        wxString::Format( _( "Loading library '%s'" ), libName ) );
+                    progressDlg.Update( progress, wxString::Format( _( "Loading library '%s'..." ),
+                                                                    libName ) );
                 } );
     }
     else
@@ -1031,7 +1032,7 @@ bool SYMBOL_EDIT_FRAME::backupFile( const wxFileName& aOriginalFile, const wxStr
 
         if( !wxCopyFile( aOriginalFile.GetFullPath(), backupFileName.GetFullPath() ) )
         {
-            DisplayError( this, wxString::Format( _( "Failed to save backup to \"%s\"" ),
+            DisplayError( this, wxString::Format( _( "Failed to save backup to '%s'." ),
                                                   backupFileName.GetFullPath() ) );
             return false;
         }

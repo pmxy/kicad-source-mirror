@@ -28,13 +28,11 @@
  */
 
 #include <cerrno>
-#include <common.h>
 #include <confirm.h>
 #include <macros.h>
 #include <title_block.h>
 #include <trigo.h>
 
-#include <advanced_config.h>
 #include <board.h>
 #include <board_design_settings.h>
 #include <pcb_dimension.h>
@@ -54,10 +52,10 @@
 #include <zones.h>
 #include <plugins/kicad/pcb_parser.h>
 #include <convert_basic_shapes_to_polygon.h>    // for RECT_CHAMFER_POSITIONS definition
-#include <template_fieldnames.h>
 #include <math/util.h>                           // KiROUND, Clamp
 #include <kicad_string.h>
 #include <wx/log.h>
+#include <widgets/progress_reporter.h>
 
 using namespace PCB_KEYS_T;
 
@@ -107,6 +105,28 @@ void PCB_PARSER::init()
 }
 
 
+void PCB_PARSER::checkpoint()
+{
+    const unsigned PROGRESS_DELTA = 250;
+
+    if( m_progressReporter )
+    {
+        unsigned curLine = m_lineReader->LineNumber();
+
+        if( curLine > m_lastProgressLine + PROGRESS_DELTA )
+        {
+            m_progressReporter->SetCurrentProgress( ( (double) curLine )
+                                                            / std::max( 1U, m_lineCount ) );
+
+            if( !m_progressReporter->KeepRefreshing() )
+                THROW_IO_ERROR( ( "Open cancelled by user." ) );
+
+            m_lastProgressLine = curLine;
+        }
+    }
+}
+
+
 void PCB_PARSER::skipCurrent()
 {
     int curr_level = 0;
@@ -151,7 +171,7 @@ double PCB_PARSER::parseDouble()
     if( errno )
     {
         wxString error;
-        error.Printf( _( "Invalid floating point number in\nfile: \"%s\"\nline: %d\noffset: %d" ),
+        error.Printf( _( "Invalid floating point number in\nfile: '%s'\nline: %d\noffset: %d" ),
                       CurSource(), CurLineNumber(), CurOffset() );
 
         THROW_IO_ERROR( error );
@@ -160,7 +180,7 @@ double PCB_PARSER::parseDouble()
     if( CurText() == tmp )
     {
         wxString error;
-        error.Printf( _( "Missing floating point number in\nfile: \"%s\"\nline: %d\noffset: %d" ),
+        error.Printf( _( "Missing floating point number in\nfile: '%s'\nline: %d\noffset: %d" ),
                       CurSource(), CurLineNumber(), CurOffset() );
 
         THROW_IO_ERROR( error );
@@ -550,7 +570,7 @@ BOARD_ITEM* PCB_PARSER::Parse()
 
     default:
         wxString err;
-        err.Printf( _( "Unknown token \"%s\"" ), FromUTF8() );
+        err.Printf( _( "Unknown token '%s'" ), FromUTF8() );
         THROW_PARSE_ERROR( err, CurSource(), CurLine(), CurLineNumber(), CurOffset() );
     }
 
@@ -588,6 +608,8 @@ BOARD* PCB_PARSER::parseBOARD_unchecked()
 
     for( token = NextTok();  token != T_RIGHT;  token = NextTok() )
     {
+        checkpoint();
+
         if( token != T_LEFT )
             Expecting( T_LEFT );
 
@@ -714,7 +736,7 @@ BOARD* PCB_PARSER::parseBOARD_unchecked()
 
         default:
             wxString err;
-            err.Printf( _( "Unknown token \"%s\"" ), FromUTF8() );
+            err.Printf( _( "Unknown token '%s'" ), FromUTF8() );
             THROW_PARSE_ERROR( err, CurSource(), CurLine(), CurLineNumber(), CurOffset() );
         }
     }
@@ -985,7 +1007,7 @@ void PCB_PARSER::parsePAGE_INFO()
     if( !pageInfo.SetType( pageType ) )
     {
         wxString err;
-        err.Printf( _( "Page type \"%s\" is not valid " ), FromUTF8() );
+        err.Printf( _( "Page type '%s' is not valid." ), FromUTF8() );
         THROW_PARSE_ERROR( err, CurSource(), CurLine(), CurLineNumber(), CurOffset() );
     }
 
@@ -1515,13 +1537,12 @@ void PCB_PARSER::parseLayers()
 
             if( it == m_layerIndices.end() )
             {
-                wxString error = wxString::Format(
-                    _( "Layer \"%s\" in file \"%s\" at line %d, is not in fixed layer hash" ),
-                    layer.m_name,
-                    CurSource(),
-                    CurLineNumber(),
-                    CurOffset()
-                    );
+                wxString error;
+                error.Printf( _( "Layer '%s' in file '%s' at line %d is not in fixed layer hash." ),
+                              layer.m_name,
+                              CurSource(),
+                              CurLineNumber(),
+                              CurOffset() );
 
                 THROW_IO_ERROR( error );
             }
@@ -1710,7 +1731,7 @@ void PCB_PARSER::parseSetup()
             break;
 
         case T_via_min_annulus:
-            designSettings.m_ViasMinAnnulus = parseBoardUnits( T_via_min_annulus );
+            designSettings.m_ViasMinAnnularWidth = parseBoardUnits( T_via_min_annulus );
             m_board->m_LegacyDesignSettingsLoaded = true;
             NeedRIGHT();
             break;
@@ -2197,8 +2218,11 @@ void PCB_PARSER::parseNETCLASS()
         // unique_ptr will delete nc on this code path
 
         wxString error;
-        error.Printf( _( "Duplicate NETCLASS name \"%s\" in file \"%s\" at line %d, offset %d" ),
-                      nc->GetName().GetData(), CurSource().GetData(), CurLineNumber(), CurOffset() );
+        error.Printf( _( "Duplicate NETCLASS name '%s' in file '%s' at line %d, offset %d." ),
+                      nc->GetName().GetData(),
+                      CurSource().GetData(),
+                      CurLineNumber(),
+                      CurOffset() );
         THROW_IO_ERROR( error );
     }
 }
@@ -3041,8 +3065,10 @@ FOOTPRINT* PCB_PARSER::parseFOOTPRINT_unchecked( wxArrayString* aInitialComments
     if( !name.IsEmpty() && fpid.Parse( name, true ) >= 0 )
     {
         wxString error;
-        error.Printf( _( "Invalid footprint ID in\nfile: \"%s\"\nline: %d\noffset: %d" ),
-                      CurSource(), CurLineNumber(), CurOffset() );
+        error.Printf( _( "Invalid footprint ID in\nfile: '%s'\nline: %d\noffset: %d." ),
+                      CurSource(),
+                      CurLineNumber(),
+                      CurOffset() );
         THROW_IO_ERROR( error );
     }
 
@@ -3968,13 +3994,10 @@ PAD* PCB_PARSER::parsePAD( FOOTPRINT* aParent )
         case T_net:
             if( ! pad->SetNetCode( getNetCode( parseInt( "net number" ) ), /* aNoAssert */ true ) )
             {
-                wxLogError( wxString::Format( _( "Invalid net ID in\n"
-                                                 "file: '%s'\n"
-                                                 "line: %d\n"
-                                                 "offset: %d" ),
-                                              CurSource(),
-                                              CurLineNumber(),
-                                              CurOffset() ) );
+                wxLogError( _( "Invalid net ID in\nfile: %s\nline: %d offset: %d" ),
+                            CurSource(),
+                            CurLineNumber(),
+                            CurOffset() );
             }
 
             NeedSYMBOLorNUMBER();
@@ -3992,13 +4015,10 @@ PAD* PCB_PARSER::parsePAD( FOOTPRINT* aParent )
                 if( netName != m_board->FindNet( pad->GetNetCode() )->GetNetname() )
                 {
                     pad->SetNetCode( NETINFO_LIST::ORPHANED, /* aNoAssert */ true );
-                    wxLogError( wxString::Format( _( "Net name doesn't match net ID in\n"
-                                                     "file: '%s'\n"
-                                                     "line: %d\n"
-                                                     "offset: %d" ),
-                                                  CurSource(),
-                                                  CurLineNumber(),
-                                                  CurOffset() ) );
+                    wxLogError( _( "Net name doesn't match ID in\nfile: %s\nline: %d offset: %d" ),
+                                 CurSource(),
+                                 CurLineNumber(),
+                                 CurOffset() );
                 }
             }
 
@@ -4447,8 +4467,10 @@ PCB_ARC* PCB_PARSER::parseARC()
         case T_net:
             if( !arc->SetNetCode( getNetCode( parseInt( "net number" ) ), /* aNoAssert */ true ) )
                 THROW_IO_ERROR( wxString::Format(
-                        _( "Invalid net ID in\nfile: \"%s\"\nline: %d\noffset: %d" ), CurSource(),
-                        CurLineNumber(), CurOffset() ) );
+                        _( "Invalid net ID in\nfile: '%s'\nline: %d\noffset: %d." ),
+                        CurSource(),
+                        CurLineNumber(),
+                        CurOffset() ) );
             break;
 
         case T_tstamp:
@@ -4525,7 +4547,7 @@ PCB_TRACK* PCB_PARSER::parsePCB_TRACK()
         case T_net:
             if( !track->SetNetCode( getNetCode( parseInt( "net number" ) ), /* aNoAssert */ true ) )
                 THROW_IO_ERROR( wxString::Format(
-                        _( "Invalid net ID in\nfile: \"%s\"\nline: %d\noffset: %d" ), CurSource(),
+                        _( "Invalid net ID in\nfile: '%s'\nline: %d\noffset: %d." ), CurSource(),
                         CurLineNumber(), CurOffset() ) );
             break;
 
@@ -4729,8 +4751,10 @@ ZONE* PCB_PARSER::parseZONE( BOARD_ITEM_CONTAINER* aParent )
 
             if( !zone->SetNetCode( tmp, /* aNoAssert */ true ) )
                 THROW_IO_ERROR( wxString::Format(
-                        _( "Invalid net ID in\nfile: \"%s\"\nline: %d\noffset: %d" ), CurSource(),
-                        CurLineNumber(), CurOffset() ) );
+                        _( "Invalid net ID in\n file: '%s;\nline: %d\noffset: %d." ),
+                        CurSource(),
+                        CurLineNumber(),
+                        CurOffset() ) );
 
             NeedRIGHT();
             break;

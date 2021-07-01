@@ -61,6 +61,7 @@
 #include <tools/ee_inspection_tool.h>
 #include <paths.h>
 #include <wx_filename.h>  // For ::ResolvePossibleSymlinks
+#include <widgets/progress_reporter.h>
 
 #include <widgets/panel_hierarchy_browser.h>
 
@@ -299,10 +300,6 @@ bool SCH_EDIT_FRAME::OpenProjectFiles( const std::vector<wxString>& aFileSet, in
             return false;
     }
 
-    // Loading a complex project and build data can be time
-    // consumming, so display a busy cursor
-    wxBusyCursor dummy;
-
     // unload current project file before loading new
     {
         SetScreen( nullptr );
@@ -313,17 +310,8 @@ bool SCH_EDIT_FRAME::OpenProjectFiles( const std::vector<wxString>& aFileSet, in
     SetStatusText( wxEmptyString );
     m_infoBar->Dismiss();
 
-    SCH_IO_MGR::SCH_FILE_T schFileType = SCH_IO_MGR::GuessPluginTypeFromSchPath( fullFileName );
-
-    // PROJECT::SetProjectFullName() is an impactful function.  It should only be
-    // called under carefully considered circumstances.
-
-    // The calling code should know not to ask me here to change projects unless
-    // it knows what consequences that will have on other KIFACEs running and using
-    // this same PROJECT.  It can be very harmful if that calling code is stupid.
-
-    // NOTE: The calling code should never call this in hosted (non-standalone) mode with a
-    // different project than what has been loaded by the manager frame.  This will crash.
+    WX_PROGRESS_REPORTER progressReporter( this, is_new ? _( "Creating Schematic" )
+                                                        : _( "Loading Schematic" ), 1 );
 
     bool differentProject = pro.GetFullPath() != Prj().GetProjectFullName();
 
@@ -347,6 +335,8 @@ bool SCH_EDIT_FRAME::OpenProjectFiles( const std::vector<wxString>& aFileSet, in
 
         CreateScreens();
     }
+
+    SCH_IO_MGR::SCH_FILE_T schFileType = SCH_IO_MGR::GuessPluginTypeFromSchPath( fullFileName );
 
     if( schFileType == SCH_IO_MGR::SCH_LEGACY )
     {
@@ -404,31 +394,42 @@ bool SCH_EDIT_FRAME::OpenProjectFiles( const std::vector<wxString>& aFileSet, in
         SCH_PLUGIN* plugin = SCH_IO_MGR::FindPlugin( schFileType );
         SCH_PLUGIN::SCH_PLUGIN_RELEASER pi( plugin );
 
+        pi->SetProgressReporter( &progressReporter );
+
         bool failedLoad = false;
+
         try
         {
             Schematic().SetRoot( pi->Load( fullFileName, &Schematic() ) );
 
             if( !pi->GetError().IsEmpty() )
             {
-                DisplayErrorMessage( this,
-                                     _( "The entire schematic could not be loaded.  Errors "
-                                        "occurred attempting to load \nhierarchical sheet "
-                                        "schematics." ),
+                DisplayErrorMessage( this, _( "The entire schematic could not be loaded.  Errors "
+                                              "occurred attempting to load hierarchical sheets." ),
                                      pi->GetError() );
             }
+        }
+        catch( const FUTURE_FORMAT_ERROR& ffe )
+        {
+            msg.Printf( _( "Error loading schematic '%s'." ), fullFileName);
+            progressReporter.Hide();
+            DisplayErrorMessage( this, msg, ffe.Problem() );
+
+            failedLoad = true;
         }
         catch( const IO_ERROR& ioe )
         {
             msg.Printf( _( "Error loading schematic '%s'." ), fullFileName);
+            progressReporter.Hide();
             DisplayErrorMessage( this, msg, ioe.What() );
 
             failedLoad = true;
         }
         catch( const std::bad_alloc& )
         {
-            msg.Printf( _( "Memory exhausted loading schematic file '%s'." ), fullFileName );
-            DisplayErrorMessage( this, msg );
+            msg.Printf( _( "Memory exhausted loading schematic '%s'." ), fullFileName );
+            progressReporter.Hide();
+            DisplayErrorMessage( this, msg, wxEmptyString );
 
             failedLoad = true;
         }
@@ -771,7 +772,7 @@ void SCH_EDIT_FRAME::OnImportProject( wxCommandEvent& aEvent )
 
     if( pluginType == SCH_IO_MGR::SCH_FILE_T::SCH_FILE_UNKNOWN )
     {
-        wxLogError( wxString::Format( "unexpected file extension: %s", fn.GetExt() ) );
+        wxLogError( _( "Unexpected file extension: '%s'." ), fn.GetExt() );
         return;
     }
 
@@ -1127,19 +1128,18 @@ bool SCH_EDIT_FRAME::importFile( const wxString& aFileName, int aFileType )
         try
         {
             SCH_PLUGIN::SCH_PLUGIN_RELEASER pi( SCH_IO_MGR::FindPlugin( fileType ) );
-            DIALOG_HTML_REPORTER*           reporter = new DIALOG_HTML_REPORTER( this );
+            DIALOG_HTML_REPORTER            errorReporter( this );
+            WX_PROGRESS_REPORTER            progressReporter( this, _( "Importing Schematic" ), 1 );
 
-            pi->SetReporter( reporter->m_Reporter );
+            pi->SetReporter( errorReporter.m_Reporter );
+            pi->SetProgressReporter( &progressReporter );
             Schematic().SetRoot( pi->Load( aFileName, &Schematic() ) );
 
-            if( reporter->m_Reporter->HasMessage() )
+            if( errorReporter.m_Reporter->HasMessage() )
             {
-                reporter->m_Reporter->Flush();  // Build HTML messages
-                reporter->ShowModal();
+                errorReporter.m_Reporter->Flush();  // Build HTML messages
+                errorReporter.ShowModal();
             }
-
-            pi->SetReporter( &WXLOG_REPORTER::GetInstance() );
-            delete reporter;
 
             // Non-KiCad schematics do not use a drawing-sheet (or if they do, it works differently
             // to KiCad), so set it to an empty one

@@ -41,6 +41,9 @@
 #include <properties.h>
 #include <trace_helpers.h>
 #include <trigo.h>
+#include <confirm.h>
+#include <widgets/progress_reporter.h>
+#include <wx_filename.h>       // For ::ResolvePossibleSymlinks()
 
 #include <general.h>
 #include <sch_bitmap.h>
@@ -70,10 +73,8 @@
 #include <lib_text.h>
 #include <eeschema_id.h>       // for MAX_UNIT_COUNT_PER_PACKAGE definition
 #include <symbol_lib_table.h>  // for PropPowerSymsOnly definition.
-#include <confirm.h>
 #include <tool/selection.h>
 #include <default_values.h>    // For some default values
-#include <wx_filename.h>       // For ::ResolvePossibleSymlinks()
 
 
 #define Mils2Iu( x ) Mils2iu( x )
@@ -582,7 +583,11 @@ public:
 };
 
 
-SCH_LEGACY_PLUGIN::SCH_LEGACY_PLUGIN()
+SCH_LEGACY_PLUGIN::SCH_LEGACY_PLUGIN() :
+    m_progressReporter( nullptr ),
+    m_lineReader( nullptr ),
+    m_lastProgressLine( 0 ),
+    m_lineCount( 0 )
 {
     init( NULL );
 }
@@ -601,6 +606,28 @@ void SCH_LEGACY_PLUGIN::init( SCHEMATIC* aSchematic, const PROPERTIES* aProperti
     m_schematic = aSchematic;
     m_cache     = nullptr;
     m_out       = nullptr;
+}
+
+
+void SCH_LEGACY_PLUGIN::checkpoint()
+{
+    const unsigned PROGRESS_DELTA = 250;
+
+    if( m_progressReporter )
+    {
+        unsigned curLine = m_lineReader->LineNumber();
+
+        if( curLine > m_lastProgressLine + PROGRESS_DELTA )
+        {
+            m_progressReporter->SetCurrentProgress( ( (double) curLine )
+                                                            / std::max( 1U, m_lineCount ) );
+
+            if( !m_progressReporter->KeepRefreshing() )
+                THROW_IO_ERROR( ( "Open cancelled by user." ) );
+
+            m_lastProgressLine = curLine;
+        }
+    }
 }
 
 
@@ -691,10 +718,10 @@ void SCH_LEGACY_PLUGIN::loadHierarchy( SCH_SHEET* aSheet )
         // Save the current path so that it gets restored when descending and ascending the
         // sheet hierarchy which allows for sheet schematic files to be nested in folders
         // relative to the last path a schematic was loaded from.
-        wxLogTrace( traceSchLegacyPlugin, "Saving path    \"%s\"", m_currentPath.top() );
+        wxLogTrace( traceSchLegacyPlugin, "Saving path    '%s'", m_currentPath.top() );
         m_currentPath.push( fileName.GetPath() );
-        wxLogTrace( traceSchLegacyPlugin, "Current path   \"%s\"", m_currentPath.top() );
-        wxLogTrace( traceSchLegacyPlugin, "Loading        \"%s\"", fileName.GetFullPath() );
+        wxLogTrace( traceSchLegacyPlugin, "Current path   '%s'", m_currentPath.top() );
+        wxLogTrace( traceSchLegacyPlugin, "Loading        '%s'", fileName.GetFullPath() );
 
         m_rootSheet->SearchHierarchy( fileName.GetFullPath(), &screen );
 
@@ -753,6 +780,22 @@ void SCH_LEGACY_PLUGIN::loadFile( const wxString& aFileName, SCH_SCREEN* aScreen
 {
     FILE_LINE_READER reader( aFileName );
 
+    if( m_progressReporter )
+    {
+        m_progressReporter->Report( wxString::Format( _( "Loading %s..." ), aFileName ) );
+
+        if( !m_progressReporter->KeepRefreshing() )
+            THROW_IO_ERROR( ( "Open cancelled by user." ) );
+
+        m_lineReader = &reader;
+        m_lineCount = 0;
+
+        while( reader.ReadLine() )
+            m_lineCount++;
+
+        reader.Rewind();
+    }
+
     loadHeader( reader, aScreen );
 
     LoadContent( reader, aScreen, m_version );
@@ -782,6 +825,8 @@ void SCH_LEGACY_PLUGIN::LoadContent( LINE_READER& aReader, SCH_SCREEN* aScreen, 
 
     while( aReader.ReadLine() )
     {
+        checkpoint();
+
         char* line = aReader.Line();
 
         while( *line == ' ' )
@@ -823,8 +868,8 @@ void SCH_LEGACY_PLUGIN::loadHeader( LINE_READER& aReader, SCH_SCREEN* aScreen )
 
     if( !line || !strCompare( "Eeschema Schematic File Version", line, &line ) )
     {
-        m_error.Printf(
-                _( "\"%s\" does not appear to be an Eeschema file" ), aScreen->GetFileName() );
+        m_error.Printf( _( "'%s' does not appear to be an Eeschema file." ),
+                        aScreen->GetFileName() );
         THROW_IO_ERROR( m_error );
     }
 
@@ -842,6 +887,8 @@ void SCH_LEGACY_PLUGIN::loadHeader( LINE_READER& aReader, SCH_SCREEN* aScreen )
     // Skip all lines until the end of header "EELAYER END" is found
     while( aReader.ReadLine() )
     {
+        checkpoint();
+
         line = aReader.Line();
 
         while( *line == ' ' )
@@ -1528,7 +1575,7 @@ SCH_SYMBOL* SCH_LEGACY_PLUGIN::loadSymbol( LINE_READER& aReader )
             if( m_version > 3 )
                 libId.Parse( libName, true );
             else
-                libId.SetLibItemName( libName, false );
+                libId.SetLibItemName( libName );
 
             symbol->SetLibId( libId );
 
@@ -2560,21 +2607,21 @@ void SCH_LEGACY_PLUGIN_CACHE::Load()
 {
     if( !m_libFileName.FileExists() )
     {
-        THROW_IO_ERROR( wxString::Format( _( "Library file \"%s\" not found." ),
+        THROW_IO_ERROR( wxString::Format( _( "Library file '%s' not found." ),
                                           m_libFileName.GetFullPath() ) );
     }
 
     wxCHECK_RET( m_libFileName.IsAbsolute(),
                  wxString::Format( "Cannot use relative file paths in legacy plugin to "
-                                   "open library \"%s\".", m_libFileName.GetFullPath() ) );
+                                   "open library '%s'.", m_libFileName.GetFullPath() ) );
 
-    wxLogTrace( traceSchLegacyPlugin, "Loading legacy symbol file \"%s\"",
+    wxLogTrace( traceSchLegacyPlugin, "Loading legacy symbol file '%s'",
                 m_libFileName.GetFullPath() );
 
     FILE_LINE_READER reader( m_libFileName.GetFullPath() );
 
     if( !reader.ReadLine() )
-        THROW_IO_ERROR( _( "unexpected end of file" ) );
+        THROW_IO_ERROR( _( "Unexpected end of file." ) );
 
     const char* line = reader.Line();
 
@@ -2659,8 +2706,10 @@ void SCH_LEGACY_PLUGIN_CACHE::loadDocs()
         return;
 
     if( !fn.IsFileReadable() )
-        THROW_IO_ERROR( wxString::Format( _( "user does not have permission to read library "
-                                             "document file \"%s\"" ), fn.GetFullPath() ) );
+    {
+        THROW_IO_ERROR( wxString::Format( _( "Insufficient permissions to read library '%s'." ),
+                                          fn.GetFullPath() ) );
+    }
 
     FILE_LINE_READER reader( fn.GetFullPath() );
 
@@ -2685,7 +2734,7 @@ void SCH_LEGACY_PLUGIN_CACHE::loadDocs()
 
         aliasName = wxString::FromUTF8( line );
         aliasName.Trim();
-        aliasName = LIB_ID::FixIllegalChars( aliasName );
+        aliasName = EscapeString( aliasName, CTX_LIBID );
 
         LIB_SYMBOL_MAP::iterator it = m_symbols.find( aliasName );
 
@@ -3201,7 +3250,7 @@ void SCH_LEGACY_PLUGIN_CACHE::loadDrawEntries( std::unique_ptr<LIB_SYMBOL>& aSym
         line = aReader.ReadLine();
     }
 
-    SCH_PARSE_ERROR( "file ended prematurely loading symbol draw element", aReader, line );
+    SCH_PARSE_ERROR( "File ended prematurely loading symbol draw element.", aReader, line );
 }
 
 
@@ -3717,7 +3766,7 @@ void SCH_LEGACY_PLUGIN_CACHE::loadFootprintFilters( std::unique_ptr<LIB_SYMBOL>&
         line = aReader.ReadLine();
     }
 
-    SCH_PARSE_ERROR( "file ended prematurely while loading footprint filters", aReader, line );
+    SCH_PARSE_ERROR( "File ended prematurely while loading footprint filters.", aReader, line );
 }
 
 
@@ -4347,9 +4396,8 @@ void SCH_LEGACY_PLUGIN::CreateSymbolLib( const wxString& aLibraryPath,
 {
     if( wxFileExists( aLibraryPath ) )
     {
-        THROW_IO_ERROR( wxString::Format(
-            _( "symbol library \"%s\" already exists, cannot create a new library" ),
-            aLibraryPath.GetData() ) );
+        THROW_IO_ERROR( wxString::Format( _( "Symbol library '%s' already exists." ),
+                                          aLibraryPath.GetData() ) );
     }
 
     LOCALE_IO toggle;
@@ -4374,7 +4422,7 @@ bool SCH_LEGACY_PLUGIN::DeleteSymbolLib( const wxString& aLibraryPath,
     // we don't want that.  we want bare metal portability with no UI here.
     if( wxRemove( aLibraryPath ) )
     {
-        THROW_IO_ERROR( wxString::Format( _( "library \"%s\" cannot be deleted" ),
+        THROW_IO_ERROR( wxString::Format( _( "Symbol library '%s' cannot be deleted." ),
                                           aLibraryPath.GetData() ) );
     }
 

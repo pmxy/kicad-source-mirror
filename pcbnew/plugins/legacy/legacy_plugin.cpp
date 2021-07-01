@@ -88,6 +88,7 @@
 #include <trigo.h>
 #include <confirm.h>
 #include <math/util.h>      // for KiROUND
+#include <widgets/progress_reporter.h>
 
 typedef LEGACY_PLUGIN::BIU      BIU;
 
@@ -193,6 +194,29 @@ static const char delims[] = " \t\r\n";
 static bool inline isSpace( int c ) { return strchr( delims, c ) != nullptr; }
 
 #define MASK(x)             (1<<(x))
+
+
+void LEGACY_PLUGIN::checkpoint()
+{
+    const unsigned PROGRESS_DELTA = 250;
+
+    if( m_progressReporter )
+    {
+        unsigned curLine = m_reader->LineNumber();
+
+        if( curLine > m_lastProgressLine + PROGRESS_DELTA )
+        {
+            m_progressReporter->SetCurrentProgress( ( (double) curLine )
+                                                            / std::max( 1U, m_lineCount ) );
+
+            if( !m_progressReporter->KeepRefreshing() )
+                THROW_IO_ERROR( ( "Open cancelled by user." ) );
+
+            m_lastProgressLine = curLine;
+        }
+    }
+}
+
 
 //-----<BOARD Load Functions>---------------------------------------------------
 
@@ -378,7 +402,8 @@ static inline long hexParse( const char* next, const char** out = NULL )
 
 
 BOARD* LEGACY_PLUGIN::Load( const wxString& aFileName, BOARD* aAppendToMe,
-                            const PROPERTIES* aProperties, PROJECT* aProject )
+                            const PROPERTIES* aProperties, PROJECT* aProject,
+                            PROGRESS_REPORTER* aProgressReporter )
 {
     LOCALE_IO   toggle;     // toggles on, then off, the C locale.
 
@@ -402,13 +427,30 @@ BOARD* LEGACY_PLUGIN::Load( const wxString& aFileName, BOARD* aAppendToMe,
 
     FILE_LINE_READER    reader( aFileName );
 
-    m_reader = &reader;          // member function accessibility
+    m_reader = &reader;
+    m_progressReporter = aProgressReporter;
 
     checkVersion();
+
+    if( m_progressReporter )
+    {
+        m_lineCount = 0;
+
+        m_progressReporter->Report( wxString::Format( _( "Loading %s..." ), aFileName ) );
+
+        if( !m_progressReporter->KeepRefreshing() )
+            THROW_IO_ERROR( ( "Open cancelled by user." ) );
+
+        while( reader.ReadLine() )
+            m_lineCount++;
+
+        reader.Rewind();
+    }
 
     loadAllSections( bool( aAppendToMe ) );
 
     (void)boardDeleter.release(); // give it up so we dont delete it on exit
+    m_progressReporter = nullptr;
     return m_board;
 }
 
@@ -426,6 +468,8 @@ void LEGACY_PLUGIN::loadAllSections( bool doAppend )
 
     while( ( line = READLINE( m_reader ) ) != NULL )
     {
+        checkpoint();
+
         // put the more frequent ones at the top, but realize TRACKs are loaded as a group
 
         if( TESTLINE( "$MODULE" ) )
@@ -703,7 +747,7 @@ void LEGACY_PLUGIN::loadSHEET()
 
                 if( !page.SetType( wname ) )
                 {
-                    m_error.Printf( _( "Unknown sheet type \"%s\" on line:%d" ),
+                    m_error.Printf( _( "Unknown sheet type '%s' on line: %d." ),
                                     wname.GetData(),
                                     m_reader->LineNumber() );
                     THROW_IO_ERROR( m_error );
@@ -1383,9 +1427,8 @@ void LEGACY_PLUGIN::loadFOOTPRINT( FOOTPRINT* aFootprint )
         }
     }
 
-    wxString msg = wxString::Format(
-            _( "Missing '$EndMODULE' for MODULE \"%s\"" ), aFootprint->GetFPID().GetLibItemName().wx_str() );
-
+    wxString msg = wxString::Format( _( "Missing '$EndMODULE' for MODULE '%s'." ),
+                                     aFootprint->GetFPID().GetLibItemName().wx_str() );
     THROW_IO_ERROR( msg );
 }
 
@@ -1434,7 +1477,7 @@ void LEGACY_PLUGIN::loadPAD( FOOTPRINT* aFootprint )
             case 'O':   padshape = static_cast<int>( PAD_SHAPE::OVAL );        break;
             case 'T':   padshape = static_cast<int>( PAD_SHAPE::TRAPEZOID );   break;
             default:
-                m_error.Printf( _( "Unknown padshape '%c=0x%02x' on line: %d of footprint: \"%s\"" ),
+                m_error.Printf( _( "Unknown padshape '%c=0x%02x' on line: %d of footprint: '%s'." ),
                                 padchar,
                                 padchar,
                                 m_reader->LineNumber(),
@@ -1639,12 +1682,11 @@ void LEGACY_PLUGIN::loadFP_SHAPE( FOOTPRINT* aFootprint )
     case 'A': shape = PCB_SHAPE_TYPE::ARC; break;
     case 'P': shape = PCB_SHAPE_TYPE::POLYGON; break;
     default:
-        m_error.Printf( _( "Unknown FP_SHAPE type:'%c=0x%02x' on line:%d of footprint:\"%s\"" ),
+        m_error.Printf( _( "Unknown FP_SHAPE type:'%c=0x%02x' on line %d of footprint '%s'." ),
                         (unsigned char) line[1],
                         (unsigned char) line[1],
                         m_reader->LineNumber(),
-                        aFootprint->GetFPID().GetLibItemName().wx_str()
-                        );
+                        aFootprint->GetFPID().GetLibItemName().wx_str() );
         THROW_IO_ERROR( m_error );
     }
 
@@ -2200,6 +2242,8 @@ void LEGACY_PLUGIN::loadTrackList( int aStructType )
 
     while( ( line = READLINE( m_reader ) ) != NULL )
     {
+        checkpoint();
+
         // read two lines per loop iteration, each loop is one TRACK or VIA
         // example first line:
         // e.g. "Po 0 23994 28800 24400 28800 150 -1"  for a track
@@ -2419,7 +2463,7 @@ void LEGACY_PLUGIN::loadNETCLASS()
 
                 // unique_ptr will delete nc on this code path
 
-                m_error.Printf( _( "duplicate NETCLASS name \"%s\"" ), nc->GetName().GetData() );
+                m_error.Printf( _( "Duplicate NETCLASS name '%s'." ), nc->GetName().GetData() );
                 THROW_IO_ERROR( m_error );
             }
 
@@ -2936,18 +2980,20 @@ BIU LEGACY_PLUGIN::biuParse( const char* aValue, const char** nptrptr )
 
     if( errno )
     {
-        m_error.Printf( _( "invalid float number in file: \"%s\"\nline: %d, offset: %d" ),
-            m_reader->GetSource().GetData(),
-            m_reader->LineNumber(), aValue - m_reader->Line() + 1 );
+        m_error.Printf( _( "Invalid floating point number in file: '%s'\nline: %d, offset: %d" ),
+                        m_reader->GetSource().GetData(),
+                        m_reader->LineNumber(),
+                        aValue - m_reader->Line() + 1 );
 
         THROW_IO_ERROR( m_error );
     }
 
     if( aValue == nptr )
     {
-        m_error.Printf( _( "missing float number in file: \"%s\"\nline: %d, offset: %d" ),
-            m_reader->GetSource().GetData(),
-            m_reader->LineNumber(), aValue - m_reader->Line() + 1 );
+        m_error.Printf( _( "Missing floating point number in file: '%s'\nline: %d, offset: %d" ),
+                        m_reader->GetSource().GetData(),
+                        m_reader->LineNumber(),
+                        aValue - m_reader->Line() + 1 );
 
         THROW_IO_ERROR( m_error );
     }
@@ -2973,16 +3019,20 @@ double LEGACY_PLUGIN::degParse( const char* aValue, const char** nptrptr )
 
     if( errno )
     {
-        m_error.Printf( _( "invalid float number in file: \"%s\"\nline: %d, offset: %d" ),
-            m_reader->GetSource().GetData(), m_reader->LineNumber(), aValue - m_reader->Line() + 1 );
+        m_error.Printf( _( "Invalid floating point number in file: '%s'\nline: %d, offset: %d" ),
+                        m_reader->GetSource().GetData(),
+                        m_reader->LineNumber(),
+                        aValue - m_reader->Line() + 1 );
 
         THROW_IO_ERROR( m_error );
     }
 
     if( aValue == nptr )
     {
-        m_error.Printf( _( "missing float number in file: \"%s\"\nline: %d, offset: %d" ),
-            m_reader->GetSource().GetData(), m_reader->LineNumber(), aValue - m_reader->Line() + 1 );
+        m_error.Printf( _( "Missing floating point number in file: '%s'\nline: %d, offset: %d" ),
+                        m_reader->GetSource().GetData(),
+                        m_reader->LineNumber(),
+                        aValue - m_reader->Line() + 1 );
 
         THROW_IO_ERROR( m_error );
     }
@@ -3352,7 +3402,7 @@ bool LEGACY_PLUGIN::FootprintLibDelete( const wxString& aLibraryPath,
     // we don't want that.  we want bare metal portability with no UI here.
     if( wxRemove( aLibraryPath ) )
     {
-        THROW_IO_ERROR( wxString::Format( _( "library \"%s\" cannot be deleted" ),
+        THROW_IO_ERROR( wxString::Format( _( "Footprint library '%s' cannot be deleted." ),
                                           aLibraryPath.GetData() ) );
     }
 
@@ -3386,6 +3436,9 @@ LEGACY_PLUGIN::LEGACY_PLUGIN() :
     m_cu_count( 16 ),               // for FootprintLoad()
     m_board( nullptr ),
     m_props( nullptr ),
+    m_progressReporter( nullptr ),
+    m_lastProgressLine( 0 ),
+    m_lineCount( 0 ),
     m_reader( nullptr ),
     m_fp( nullptr ),
     m_cache( nullptr )
