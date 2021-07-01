@@ -45,3 +45,5 @@ target_link_libraries( sexpr
 target_include_directories( sexpr PRIVATE
     ${CMAKE_SOURCE_DIR}/include
 )
+
+target_precompile_headers (sexpr PUBLIC ${CMAKE_SOURCE_DIR}/gcc_H.h)

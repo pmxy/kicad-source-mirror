@@ -21,7 +21,7 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 #
 
-cmake_minimum_required( VERSION 3.10 FATAL_ERROR )
+cmake_minimum_required( VERSION 3.16 FATAL_ERROR )
 
 # Default to CMAKE_BUILD_TYPE = Release unless overridden on command line
 # http://www.cmake.org/pipermail/cmake/2008-September/023808.html
@@ -53,6 +53,17 @@ cmake_dependent_option( BUILD_SMALL_DEBUG_FILES "In debug build: create smaller 
 # OnCopyVersionInfo() function in common/dialog_about/dialog_about.cpp
 # so that build option settings can be included in bug reports.
 #
+
+option( KICAD_USE_PRECOMPILED_HEADERS
+    "Use Precompiled headers (default FALSE)."
+    FALSE )
+mark_as_advanced( KICAD_USE_PRECOMPILED_HEADERS )
+
+
+option( USE_CCACHE
+    "Use ccache for compilation acceleration (default FALSE)."
+    FALSE )
+mark_as_advanced( USE_CCACHE )
 
 option( KICAD_SCRIPTING_WXPYTHON
     "Build wxPython implementation for wx interface building in Python and py.shell (default ON)."
@@ -877,6 +888,7 @@ set( wxWidgets_CONFIG_OPTIONS ${wxWidgets_CONFIG_OPTIONS} --static=no )
 
 find_package( wxWidgets ${wxWidgets_REQ_VERSION} COMPONENTS gl aui adv html core net base propgrid xml stc REQUIRED )
 
+
 # Include wxWidgets macros.
 include( ${wxWidgets_USE_FILE} )
 
@@ -1015,3 +1027,7 @@ if( KICAD_BUILD_I18N )
 endif()
 
 add_subdirectory( template )
+
+if ( KICAD_USE_PRECOMPILED_HEADERS )
+
+endif()

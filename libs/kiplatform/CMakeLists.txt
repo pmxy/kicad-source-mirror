@@ -77,3 +77,5 @@ target_link_libraries( kiplatform
     ${wxWidgets_LIBRARIES}
     ${PLATFORM_LIBS}
     )
+    
+target_precompile_headers (kiplatform PUBLIC ${CMAKE_SOURCE_DIR}/gcc_H.h)

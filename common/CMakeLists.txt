@@ -679,3 +679,25 @@ make_lexer(
 add_executable( dsntest EXCLUDE_FROM_ALL dsnlexer.cpp )
 target_link_libraries( dsntest common ${wxWidgets_LIBRARIES} rt )
 
+
+target_precompile_headers (
+                          common	  PUBLIC	   ${CMAKE_SOURCE_DIR}/gcc_H_WX.h
+)
+
+target_precompile_headers (
+                          gal       PUBLIC	   ${CMAKE_SOURCE_DIR}/gcc_H.h
+)
+
+target_precompile_headers (
+                          singletop PUBLIC	   ${CMAKE_SOURCE_DIR}/gcc_H.h
+)
+
+if (future)
+target_precompile_headers (
+                          lib_kicad PUBLIC	   ${CMAKE_SOURCE_DIR}/gcc_H_WX.h
+)
+endif()
+
+target_precompile_headers (
+                          pcbcommon	PUBLIC	   ${CMAKE_SOURCE_DIR}/gcc_H.h
+)

@@ -525,3 +525,8 @@ make_lexer(
     )
 
 add_subdirectory( plugins )
+
+
+
+target_precompile_headers (eeschema_kiface  PUBLIC ${CMAKE_SOURCE_DIR}/gcc_H_WX.h)
+target_precompile_headers (eeschema         REUSE_FROM eeschema_kiface)
