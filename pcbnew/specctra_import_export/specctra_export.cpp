@@ -96,6 +96,12 @@ bool PCB_EDIT_FRAME::ExportSpecctraFile( const wxString& aFullFilename )
 
     LOCALE_IO       toggle;     // Switch the locale to standard C
 
+    // Build the board oulines *before* flipping footprints
+    if( !db.BuiltBoardOutlines( GetBoard() ) )
+    {
+        wxLogWarning( _( "Board outline is malformed. Run DRC for a full analysis." ) );
+    }
+
     // DSN Images (=KiCad FOOTPRINTs and PADs) must be presented from the top view.  So we
     // temporarily flip any footprints which are on the back side of the board to the front,
     // and record this in the FOOTPRINT's flag field.
@@ -226,6 +232,12 @@ static PATH* makePath( const POINT& aStart, const POINT& aEnd, const std::string
     path->AppendPoint( aEnd );
     path->SetLayerId( aLayerName.c_str() );
     return path;
+}
+
+
+bool SPECCTRA_DB::BuiltBoardOutlines( BOARD* aBoard  )
+{
+    return aBoard->GetBoardPolygonOutlines( m_brd_outlines );
 }
 
 
@@ -488,6 +500,7 @@ PADSTACK* SPECCTRA_DB::makePADSTACK( BOARD* aBoard, PAD* aPad )
                                          0, rradius,
                                          aPad->GetChamferRectRatio(),
                                          doChamfer ? aPad->GetChamferPositions() : 0,
+                                         0,
                                          aBoard->GetDesignSettings().m_MaxError,
                                          ERROR_INSIDE );
             SHAPE_LINE_CHAIN& polygonal_shape = cornerBuffer.Outline( 0 );
@@ -730,46 +743,126 @@ IMAGE* SPECCTRA_DB::makeIMAGE( BOARD* aBoard, FOOTPRINT* aFootprint )
             {
                 // this is best done by 4 QARC's but freerouter does not yet support QARCs.
                 // for now, support by using line segments.
-
                 outline = new SHAPE( image, T_outline );
-
                 image->Append( outline );
+
                 path = new PATH( outline );
 
                 outline->SetShape( path );
                 path->SetAperture( scale( graphic->GetWidth() ) );
                 path->SetLayerId( "signal" );
 
-                // Do the math using KiCad units, that way we stay out of the
-                // scientific notation range of floating point numbers in the
-                // DSN file.   We do not parse scientific notation in our own
-                // lexer/beautifier, and the spec is not clear that this is
-                // required.  Fixed point floats are all that should be needed.
+                double radius = graphic->GetRadius();
+                wxPoint circle_centre = graphic->m_Start0;
 
-                double radius = GetLineLength( graphic->GetStart(), graphic->GetEnd() );
+                SHAPE_LINE_CHAIN polyline;
+                ConvertArcToPolyline( polyline, VECTOR2I( circle_centre ), radius,
+                                      0.0, 360.0, ARC_HIGH_DEF, ERROR_INSIDE );
 
-                // seg count to approximate circle by line segments
-                int seg_per_circle = GetArcToSegmentCount( radius, ARC_LOW_DEF, 360.0 );
-
-                for( int ii = 0; ii < seg_per_circle; ++ii )
+                for( int ii = 0; ii < polyline.PointCount(); ++ii )
                 {
-                    double radians =  2*M_PI / seg_per_circle * ii;
-                    wxPoint point( KiROUND( radius * cos( radians ) ),
-                                   KiROUND( radius * sin( radians ) ) );
-
-                    point += graphic->m_Start0;     // an offset
-
-                    path->AppendPoint( mapPt( point ) );
+                    wxPoint corner( polyline.CPoint( ii ).x, polyline.CPoint( ii ).y );
+                    path->AppendPoint( mapPt( corner ) );
                 }
-                // The shape must be closed
-                wxPoint point( radius , 0 );
-                point += graphic->m_Start0;
-                path->AppendPoint( mapPt( point ) );
             }
             break;
 
         case PCB_SHAPE_TYPE::RECT:
+            {
+            outline = new SHAPE( image, T_outline );
+
+            image->Append( outline );
+            path = new PATH( outline );
+
+            outline->SetShape( path );
+            path->SetAperture( scale( graphic->GetWidth() ) );
+            path->SetLayerId( "signal" );
+            wxPoint corner = graphic->GetStart0();
+            path->AppendPoint( mapPt( corner ) );
+
+            corner.x = graphic->GetEnd0().x;
+            path->AppendPoint( mapPt( corner ) );
+
+            corner.y = graphic->GetEnd0().y;
+            path->AppendPoint( mapPt( corner ) );
+
+            corner.x = graphic->GetStart0().x;
+            path->AppendPoint( mapPt( corner ) );
+            }
+            break;
+
         case PCB_SHAPE_TYPE::ARC:
+            {
+                // this is best done by QARC's but freerouter does not yet support QARCs.
+                // for now, support by using line segments.
+                // So we use a polygon (PATH) to create a approximative arc shape
+                outline = new SHAPE( image, T_outline );
+
+                image->Append( outline );
+                path = new PATH( outline );
+
+                outline->SetShape( path );
+                path->SetAperture( 0 );//scale( graphic->GetWidth() ) );
+                path->SetLayerId( "signal" );
+
+                wxPoint arc_centre = graphic->m_Start0;
+                double radius = graphic->GetRadius()+ graphic->GetWidth()/2;
+                double arcStartDeg = graphic->GetArcAngleStart() / 10.0;
+                double arcAngleDeg = graphic->GetAngle() / 10.0;
+
+                // For some obscure reason, FreeRouter does not show the same polygonal
+                // shape for polygons CW and CCW. So used only the order of corners
+                // giving the best look.
+                if( arcAngleDeg < 0 )
+                {
+                    arcStartDeg = graphic->GetArcAngleEnd() / 10.0;
+                    arcAngleDeg = - arcAngleDeg;
+                }
+
+                SHAPE_LINE_CHAIN polyline;
+                ConvertArcToPolyline( polyline, VECTOR2I( arc_centre ), radius,
+                                      arcStartDeg, arcAngleDeg, ARC_HIGH_DEF, ERROR_INSIDE );
+
+                SHAPE_POLY_SET polyBuffer;
+                polyBuffer.AddOutline( polyline );
+
+                radius -= graphic->GetWidth();
+
+                if( radius > 0 )
+                {
+                    polyline.Clear();
+                    ConvertArcToPolyline( polyline, VECTOR2I( arc_centre ), radius,
+                                          arcStartDeg, arcAngleDeg, ARC_HIGH_DEF, ERROR_INSIDE );
+
+                    // Add points in reverse order, to create a closed polygon
+                    for( int ii = polyline.PointCount()-1; ii >= 0; --ii )
+                        polyBuffer.Append( polyline.CPoint( ii ) );
+                }
+
+                // ensure the polygon is closed
+                polyBuffer.Append( polyBuffer.Outline(0).CPoint( 0 ) );
+
+                wxPoint move = graphic->GetCenter() - arc_centre;
+
+                TransformCircleToPolygon( polyBuffer, graphic->GetArcStart() - move,
+                                          graphic->GetWidth()/2,
+                                          ARC_HIGH_DEF, ERROR_INSIDE );
+
+                TransformCircleToPolygon( polyBuffer, graphic->GetArcEnd() - move,
+                                          graphic->GetWidth()/2,
+                                          ARC_HIGH_DEF, ERROR_INSIDE );
+
+                polyBuffer.Simplify( SHAPE_POLY_SET::PM_FAST );
+                SHAPE_LINE_CHAIN& poly = polyBuffer.Outline( 0 );
+
+                for( int ii = 0; ii < poly.PointCount(); ++ii )
+                {
+                    wxPoint corner( poly.CPoint( ii ).x, poly.CPoint( ii ).y );
+                    path->AppendPoint( mapPt( corner ) );
+                }
+            }
+            break;
+
         default:
             continue;
         }
@@ -949,20 +1042,13 @@ PADSTACK* SPECCTRA_DB::makeVia( const PCB_VIA* aVia )
 
 void SPECCTRA_DB::fillBOUNDARY( BOARD* aBoard, BOUNDARY* boundary )
 {
-    SHAPE_POLY_SET outlines;
-
-    if( !aBoard->GetBoardPolygonOutlines( outlines ) )
-    {
-        wxLogWarning( _( "Board outline is malformed. Run DRC for a full analysis." ) );
-    }
-
-    for( int cnt = 0; cnt < outlines.OutlineCount(); cnt++ )   // Should be one outline
+    for( int cnt = 0; cnt < m_brd_outlines.OutlineCount(); cnt++ )   // Should be one outline
     {
         PATH*  path = new PATH( boundary );
         boundary->paths.push_back( path );
         path->layer_id = "pcb";
 
-        SHAPE_LINE_CHAIN& outline = outlines.Outline( cnt );
+        SHAPE_LINE_CHAIN& outline = m_brd_outlines.Outline( cnt );
 
         for( int ii = 0; ii < outline.PointCount(); ii++ )
         {
@@ -975,7 +1061,7 @@ void SPECCTRA_DB::fillBOUNDARY( BOARD* aBoard, BOUNDARY* boundary )
         path->AppendPoint( mapPt( pos0 ) );
 
         // Generate holes as keepout:
-        for( int ii = 0; ii < outlines.HoleCount( cnt ); ii++ )
+        for( int ii = 0; ii < m_brd_outlines.HoleCount( cnt ); ii++ )
         {
             // emit a signal layers keepout for every interior polygon left...
             KEEPOUT*    keepout = new KEEPOUT( NULL, T_keepout );
@@ -985,7 +1071,7 @@ void SPECCTRA_DB::fillBOUNDARY( BOARD* aBoard, BOUNDARY* boundary )
             poly_ko->SetLayerId( "signal" );
             m_pcb->structure->keepouts.push_back( keepout );
 
-            SHAPE_LINE_CHAIN& hole = outlines.Hole( cnt, ii );
+            SHAPE_LINE_CHAIN& hole = m_brd_outlines.Hole( cnt, ii );
 
             for( int jj = 0; jj < hole.PointCount(); jj++ )
             {
@@ -1566,7 +1652,7 @@ void SPECCTRA_DB::FromBOARD( BOARD* aBoard )
     {
         // export all of them for now, later we'll decide what controls we need
         // on this.
-        static const KICAD_T scanTRACKs[] = { PCB_TRACE_T, EOT };
+        static const KICAD_T scanTRACKs[] = { PCB_TRACE_T, PCB_ARC_T, EOT };
 
         items.Collect( aBoard, scanTRACKs );
 

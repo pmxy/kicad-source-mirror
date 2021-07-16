@@ -1,7 +1,7 @@
 /*
  * This program source code file is part of KiCad, a free EDA CAD application.
  *
- * Copyright (C) 2018 KiCad Developers, see AUTHORS.txt for contributors.
+ * Copyright (C) 2018-2021 KiCad Developers, see AUTHORS.txt for contributors.
  *
  * This program is free software: you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -65,9 +65,9 @@ wxFont GetInfoFont();
  * @param aString the text that is used in sizing the control's pixel width.
  * If NULL, then
  *   the text already within the control is used.
- * @return bool - true if the \a aCtrl had its size changed, else false.
+ * @return true if the \a aCtrl had its size changed, else false.
  */
-bool EnsureTextCtrlWidth( wxTextCtrl* aCtrl, const wxString* aString = NULL );
+bool EnsureTextCtrlWidth( wxTextCtrl* aCtrl, const wxString* aString = nullptr );
 
 /**
  * Select the number (or "?") in a reference for ease of editing.
@@ -76,8 +76,20 @@ void SelectReferenceNumber( wxTextEntry* aTextEntry );
 
 /**
  * Checks if a input control has focus
+ *
+ * @param aFocus Control that has focus, if null, wxWidgets will be queried
  */
-bool IsInputControlFocused();
+bool IsInputControlFocused( wxWindow* aFocus = nullptr );
+
+/**
+ * Checks if a input control has focus
+ *
+ * @param aFocus Control that test if editable
+ *
+ * @return True if control is input and editable OR control is not a input. False if control is
+ *         input and not editable.
+ */
+bool IsInputControlEditable( wxWindow* aControl );
 
 bool IsModalDialogFocused();
 

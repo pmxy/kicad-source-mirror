@@ -4,7 +4,7 @@
  * Copyright (C) 2016 Mario Luzeiro <mrluzeiro@ua.pt>
  * Copyright (C) 2015 Cirilo Bernardo <cirilo.bernardo@gmail.com>
  * Copyright (C) 2017 Jean-Pierre Charras, jp.charras at wanadoo.fr
- * Copyright (C) 2015-2020 KiCad Developers, see AUTHORS.txt for contributors.
+ * Copyright (C) 2015-2021 KiCad Developers, see AUTHORS.txt for contributors.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -37,8 +37,9 @@
 #include <gal/dpi_scaling.h>
 #include <pgm_base.h>
 #include <settings/common_settings.h>
+#include <settings/settings_manager.h>
 #include <widgets/infobar.h>
-
+#include <eda_3d_viewer_settings.h>
 
 PANEL_PREVIEW_3D_MODEL::PANEL_PREVIEW_3D_MODEL( wxWindow* aParent, PCB_BASE_FRAME* aFrame,
                                                 FOOTPRINT* aFootprint,
@@ -95,7 +96,7 @@ PANEL_PREVIEW_3D_MODEL::PANEL_PREVIEW_3D_MODEL( wxWindow* aParent, PCB_BASE_FRAM
                                        m_dummyBoard, m_boardAdapter, m_currentCamera,
                                        aFrame->Prj().Get3DCacheManager() );
 
-    loadCommonSettings();
+    loadSettings();
 
     m_boardAdapter.SetFlag( FL_USE_SELECTION, false );
     m_boardAdapter.SetFlag( FL_HIGHLIGHT_ROLLOVER_ITEM, false );
@@ -122,7 +123,8 @@ PANEL_PREVIEW_3D_MODEL::PANEL_PREVIEW_3D_MODEL( wxWindow* aParent, PCB_BASE_FRAM
     m_SizerPanelView->Add( m_previewPane, 1, wxEXPAND, 5 );
 
     for( wxEventType eventType : { wxEVT_MENU_OPEN, wxEVT_MENU_CLOSE, wxEVT_MENU_HIGHLIGHT } )
-        Connect( eventType, wxMenuEventHandler( PANEL_PREVIEW_3D_MODEL::OnMenuEvent ), NULL, this );
+        Connect( eventType, wxMenuEventHandler( PANEL_PREVIEW_3D_MODEL::OnMenuEvent ), nullptr,
+                 this );
 
 #ifdef __WXOSX__
     // Call layout once to get the proper button sizes after the bitmaps have been set
@@ -161,7 +163,7 @@ void PANEL_PREVIEW_3D_MODEL::OnMenuEvent( wxMenuEvent& aEvent )
 }
 
 
-void PANEL_PREVIEW_3D_MODEL::loadCommonSettings()
+void PANEL_PREVIEW_3D_MODEL::loadSettings()
 {
     wxCHECK_RET( m_previewPane, "Cannot load settings to null canvas" );
 
@@ -172,6 +174,43 @@ void PANEL_PREVIEW_3D_MODEL::loadCommonSettings()
 
     // TODO(JE) use all control options
     m_boardAdapter.SetFlag( FL_MOUSEWHEEL_PANNING, settings->m_Input.scroll_modifier_zoom != 0  );
+
+    COLOR_SETTINGS* colors = Pgm().GetSettingsManager().GetColorSettings();
+
+    if( colors )
+    {
+        auto set =
+                [] ( const COLOR4D& aColor, SFVEC4F& aTarget )
+                {
+                    aTarget.r = aColor.r;
+                    aTarget.g = aColor.g;
+                    aTarget.b = aColor.b;
+                    aTarget.a = aColor.a;
+                };
+
+        set( colors->GetColor( LAYER_3D_BACKGROUND_BOTTOM ), m_boardAdapter.m_BgColorBot );
+        set( colors->GetColor( LAYER_3D_BACKGROUND_TOP ), m_boardAdapter.m_BgColorTop );
+        set( colors->GetColor( LAYER_3D_BOARD ), m_boardAdapter.m_BoardBodyColor );
+        set( colors->GetColor( LAYER_3D_COPPER ), m_boardAdapter.m_CopperColor );
+        set( colors->GetColor( LAYER_3D_SILKSCREEN_BOTTOM ), m_boardAdapter.m_SilkScreenColorBot );
+        set( colors->GetColor( LAYER_3D_SILKSCREEN_TOP ), m_boardAdapter.m_SilkScreenColorTop );
+        set( colors->GetColor( LAYER_3D_SOLDERMASK ), m_boardAdapter.m_SolderMaskColorBot );
+        set( colors->GetColor( LAYER_3D_SOLDERMASK ), m_boardAdapter.m_SolderMaskColorTop );
+        set( colors->GetColor( LAYER_3D_SOLDERPASTE ), m_boardAdapter.m_SolderPasteColor );
+    }
+
+    EDA_3D_VIEWER_SETTINGS* cfg = Pgm().GetSettingsManager().GetAppSettings<EDA_3D_VIEWER_SETTINGS>();
+
+    if( cfg )
+    {
+        m_boardAdapter.SetRenderEngine( RENDER_ENGINE::OPENGL_LEGACY );
+        m_boardAdapter.SetFlag( FL_USE_REALISTIC_MODE, cfg->m_Render.realistic );
+        m_boardAdapter.SetMaterialMode( static_cast<MATERIAL_MODE>( cfg->m_Render.material_mode ) );
+
+        m_previewPane->SetAnimationEnabled( cfg->m_Camera.animation_enabled );
+        m_previewPane->SetMovingSpeedMultiplier( cfg->m_Camera.moving_speed_multiplier );
+        m_previewPane->SetProjectionMode( cfg->m_Camera.projection_mode );
+    }
 }
 
 

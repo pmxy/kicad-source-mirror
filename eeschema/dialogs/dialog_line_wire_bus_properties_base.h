@@ -30,9 +30,9 @@ class COLOR_SWATCH;
 ///////////////////////////////////////////////////////////////////////////
 
 ///////////////////////////////////////////////////////////////////////////////
-/// Class DIALOG_EDIT_LINE_STYLE_BASE
+/// Class DIALOG_LINE_WIRE_BUS_PROPERTIES_BASE
 ///////////////////////////////////////////////////////////////////////////////
-class DIALOG_EDIT_LINE_STYLE_BASE : public DIALOG_SHIM
+class DIALOG_LINE_WIRE_BUS_PROPERTIES_BASE : public DIALOG_SHIM
 {
 	DECLARE_EVENT_TABLE()
 	private:
@@ -50,6 +50,8 @@ class DIALOG_EDIT_LINE_STYLE_BASE : public DIALOG_SHIM
 		COLOR_SWATCH* m_colorSwatch;
 		wxStaticText* m_staticTextStyle;
 		wxBitmapComboBox* m_typeCombo;
+		wxStaticText* m_helpLabel1;
+		wxStaticText* m_helpLabel2;
 		wxStaticLine* m_staticline;
 		wxStdDialogButtonSizer* m_sdbSizer;
 		wxButton* m_sdbSizerOK;
@@ -62,8 +64,8 @@ class DIALOG_EDIT_LINE_STYLE_BASE : public DIALOG_SHIM
 
 	public:
 
-		DIALOG_EDIT_LINE_STYLE_BASE( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = _("Line Style"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( -1,-1 ), long style = wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER );
-		~DIALOG_EDIT_LINE_STYLE_BASE();
+		DIALOG_LINE_WIRE_BUS_PROPERTIES_BASE( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = _("Line, Wire & Bus Properties"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( -1,-1 ), long style = wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER );
+		~DIALOG_LINE_WIRE_BUS_PROPERTIES_BASE();
 
 };
 

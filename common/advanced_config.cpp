@@ -162,6 +162,12 @@ static const wxChar DrawBoundingBoxes[] = wxT( "DrawBoundingBoxes" );
 
 static const wxChar ShowPcbnewExportNetlist[] = wxT( "ShowPcbnewExportNetlist" );
 
+static const wxChar Skip3DModelFileCache[] = wxT( "Skip3DModelFileCache" );
+
+static const wxChar Skip3DModelMemoryCache[] = wxT( "Skip3DModelMemoryCache" );
+
+static const wxChar HideVersionFromTitle[] = wxT( "HideVersionFromTitle" );
+
 } // namespace KEYS
 
 
@@ -264,6 +270,9 @@ ADVANCED_CFG::ADVANCED_CFG()
     m_HotkeysDumper             = false;
     m_DrawBoundingBoxes         = false;
     m_ShowPcbnewExportNetlist   = false;
+    m_Skip3DModelFileCache      = false;
+    m_Skip3DModelMemoryCache    = false;
+    m_HideVersionFromTitle      = false;
 
     loadFromConfigFile();
 }
@@ -363,6 +372,15 @@ void ADVANCED_CFG::loadSettings( wxConfigBase& aCfg )
 
     configParams.push_back( new PARAM_CFG_BOOL( true, AC_KEYS::ShowPcbnewExportNetlist,
                                                 &m_ShowPcbnewExportNetlist, false ) );
+
+    configParams.push_back( new PARAM_CFG_BOOL( true, AC_KEYS::Skip3DModelFileCache,
+                                                &m_Skip3DModelFileCache, false ) );
+
+    configParams.push_back( new PARAM_CFG_BOOL( true, AC_KEYS::Skip3DModelMemoryCache,
+                                                &m_Skip3DModelMemoryCache, false ) );
+
+    configParams.push_back( new PARAM_CFG_BOOL( true, AC_KEYS::HideVersionFromTitle,
+                                                &m_HideVersionFromTitle, false ) );
 
     wxConfigLoadSetups( &aCfg, configParams );
 

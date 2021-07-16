@@ -2,6 +2,8 @@
  * This program source code file is part of KiCad, a free EDA CAD application.
  *
  * Copyright (C) 2017 CERN
+ * Copyright (C) 2021 KiCad Developers, see AUTHORS.txt for contributors.
+ *
  * Author: Tomasz Wlostowski <tomasz.wlostowski@cern.ch>
  *
  * This program is free software; you can redistribute it and/or
@@ -27,6 +29,7 @@
 #include <thread>
 
 PROGRESS_REPORTER::PROGRESS_REPORTER( int aNumPhases ) :
+    m_msgChanged( false ),
     m_phase( 0 ),
     m_numPhases( aNumPhases ),
     m_progress( 0 ),
@@ -61,6 +64,7 @@ void PROGRESS_REPORTER::Report( const wxString& aMessage )
 {
     std::lock_guard<std::mutex> guard( m_mutex );
     m_rptMessage = aMessage;
+    m_msgChanged = true;
 }
 
 
@@ -72,7 +76,7 @@ void PROGRESS_REPORTER::SetMaxProgress( int aMaxProgress )
 void PROGRESS_REPORTER::SetCurrentProgress( double aProgress )
 {
     m_maxProgress.store( 1000 );
-    m_progress.store( (int) (aProgress * 1000.0) );
+    m_progress.store( (int) ( aProgress * 1000.0 ) );
 }
 
 
@@ -117,6 +121,7 @@ bool PROGRESS_REPORTER::KeepRefreshing( bool aWait )
 
             wxMilliSleep( 20 );
         }
+
         return true;
     }
     else
@@ -170,14 +175,23 @@ bool WX_PROGRESS_REPORTER::updateUI()
     if( cur < 0 || cur > 1000 )
         cur = 0;
 
+    bool msgChanged = false;
     wxString message;
+
     {
         std::lock_guard<std::mutex> guard( m_mutex );
         message = m_rptMessage;
+        msgChanged = m_msgChanged;
+        m_msgChanged = false;
     }
 
     SetRange( 1000 );
-    return wxProgressDialog::Update( cur, message );
+    bool diag = wxProgressDialog::Update( cur, message );
+
+    if( msgChanged )
+        Fit();
+
+    return diag;
 }
 
 
@@ -197,10 +211,7 @@ bool GAUGE_PROGRESS_REPORTER::updateUI()
         cur = 0;
 
     wxGauge::SetValue( cur );
-    wxEventLoopBase::GetActive()->YieldFor(wxEVT_CATEGORY_UI);
+    wxEventLoopBase::GetActive()->YieldFor( wxEVT_CATEGORY_UI );
 
     return true;  // No cancel button on a wxGauge
 }
-
-
-

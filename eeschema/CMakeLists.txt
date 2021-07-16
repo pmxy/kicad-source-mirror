@@ -51,8 +51,6 @@ set( EESCHEMA_DLGS
     dialogs/dialog_bom.cpp
     dialogs/dialog_bom_base.cpp
     dialogs/dialog_bus_manager.cpp
-    dialogs/dialog_fields_editor_global.cpp
-    dialogs/dialog_fields_editor_global_base.cpp
     dialogs/dialog_change_symbols.cpp
     dialogs/dialog_change_symbols_base.cpp
     dialogs/dialog_choose_symbol.cpp
@@ -62,8 +60,6 @@ set( EESCHEMA_DLGS
     dialogs/dialog_edit_symbols_libid_base.cpp
     dialogs/dialog_edit_label.cpp
     dialogs/dialog_edit_label_base.cpp
-    dialogs/dialog_edit_line_style.cpp
-    dialogs/dialog_edit_line_style_base.cpp
     dialogs/dialog_edit_one_field.cpp
     dialogs/dialog_eeschema_page_settings.cpp
     dialogs/dialog_erc.cpp
@@ -81,6 +77,8 @@ set( EESCHEMA_DLGS
     dialogs/dialog_lib_edit_text_base.cpp
     dialogs/dialog_lib_new_symbol.cpp
     dialogs/dialog_lib_new_symbol_base.cpp
+    dialogs/dialog_line_wire_bus_properties.cpp
+    dialogs/dialog_line_wire_bus_properties_base.cpp
     dialogs/dialog_migrate_buses.cpp
     dialogs/dialog_migrate_buses_base.cpp
     dialogs/dialog_netlist.cpp
@@ -102,6 +100,8 @@ set( EESCHEMA_DLGS
     dialogs/dialog_schematic_find.cpp
     dialogs/dialog_schematic_find_base.cpp
     dialogs/dialog_schematic_setup.cpp
+    dialogs/dialog_symbol_fields_table.cpp
+    dialogs/dialog_symbol_fields_table_base.cpp
     dialogs/dialog_symbol_properties.cpp
     dialogs/dialog_symbol_properties_base.cpp
     dialogs/dialog_symbol_remap.cpp
@@ -496,6 +496,13 @@ else()
         DESTINATION ${KICAD_BIN}
         COMPONENT binary
         )
+endif()
+
+
+if( KICAD_WIN32_INSTALL_PDBS )
+    # Get the PDBs to copy over for MSVC
+    install(FILES $<TARGET_PDB_FILE:eeschema> DESTINATION ${KICAD_BIN})
+    install(FILES $<TARGET_PDB_FILE:eeschema_kiface> DESTINATION ${KICAD_BIN})
 endif()
 
 # auto-generate cmp_library_lexer.h and cmp_library_keywords.cpp for the component
