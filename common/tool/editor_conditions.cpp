@@ -110,7 +110,7 @@ SELECTION_CONDITION EDITOR_CONDITIONS::ScriptingConsoleVisible()
 
     wxASSERT( drwFrame );
 
-    return std::bind( &EDITOR_CONDITIONS::consoleVisibleFunc, _1, drwFrame );
+    return std::bind( &EDITOR_CONDITIONS::consoleVisibleFunc, std::placeholders::_1, drwFrame );
 }
 
 
